@@ -1,0 +1,7 @@
+torch
+rich
+torchvision
+matplotlib
+numpy<2
+torchmetrics
+pre-commit
