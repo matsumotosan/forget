@@ -1,10 +1,10 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets, transforms
-from torchmetrics.classification import Accuracy
 from torch.utils.data import DataLoader, Subset
-import numpy as np
+from torchmetrics.classification import MulticlassAccuracy
+from torchvision import datasets, transforms
 
 
 class SimpleNet(nn.Module):
@@ -63,7 +63,8 @@ test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 def train(model, dataloader, criterion, optimizer, epochs):
     model.train()
-    accuracy = Accuracy(task="multiclass", num_classes=len(train_dataset.classes))
+    # accuracy = Accuracy(task="multiclass", num_classes=len(train_dataset.classes))
+    accuracy = MulticlassAccuracy(num_classes=len(train_dataset.classes), average=None)
 
     for epoch in range(epochs):
         accuracy.reset()
@@ -79,7 +80,9 @@ def train(model, dataloader, criterion, optimizer, epochs):
             accuracy.update(outputs, labels)
 
         print(
-            f"Epoch {epoch+1} - loss: {running_loss/len(dataloader)}, acc: {accuracy.compute()}"
+            f"Epoch {epoch+1} - "
+            f"loss: {running_loss/len(dataloader)}, "
+            f"acc: {accuracy.compute()}"
         )
 
 
@@ -104,7 +107,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 train(model, train_loader, criterion, optimizer, EPOCHS)
 initial_accuracy = evaluate(model, test_loader)
-print(f"Initial Accuracy: {initial_accuracy}%")
+print(f"Accuracy: {initial_accuracy}%")
 
 # train with subset (remove '5')
 indices = np.where(train_dataset.targets != 5)[0]
@@ -115,4 +118,4 @@ unlearned_model = SimpleNet()
 optimizer = optim.Adam(unlearned_model.parameters(), lr=LEARNING_RATE)
 train(unlearned_model, filtered_train_loader, criterion, optimizer, EPOCHS)
 unlearned_accuracy = evaluate(unlearned_model, test_loader)
-print(f"Accuracy after unlearning: {unlearned_accuracy}%")
+print(f"Unlearning accuracy (exact): {unlearned_accuracy}%")
