@@ -1,0 +1,10 @@
+torch
+rich
+torchvision
+matplotlib
+numpy<2
+torchmetrics
+pandas
+pre-commit
+scikit-learn
+facenet-pytorch
