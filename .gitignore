@@ -165,3 +165,4 @@ data/
 model/
 vgg_face_torch/
 *.gz
+lightning_logs/
