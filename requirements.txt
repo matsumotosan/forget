@@ -1,6 +1,7 @@
 torch
 rich
 torchvision
+tqdm
 matplotlib
 numpy<2
 torchmetrics
@@ -8,3 +9,8 @@ pandas
 pre-commit
 scikit-learn
 facenet-pytorch
+lightning
+Pillow
+streamlit
+streamlit-image-select
+watchdog
