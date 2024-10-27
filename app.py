@@ -1,4 +1,5 @@
 import torch
+import random
 import numpy as np
 import streamlit as st
 from PIL import Image
@@ -13,7 +14,7 @@ from torch.nn.functional import softmax
 DATASET_DIR = "./data"
 CKPT_PATH = "lightning_logs/version_38/checkpoints/epoch=19-step=520.ckpt"
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 transform = T.Compose(
     [
         # T.ToTensor(),
@@ -22,7 +23,7 @@ transform = T.Compose(
 )
 
 
-def load_model():
+def load_classifier():
     model = FaceClassifier.load_from_checkpoint(CKPT_PATH).eval().to(device)
     return model
 
@@ -35,7 +36,7 @@ def load_mtcnn():
         thresholds=[0.6, 0.7, 0.7],
         factor=0.709,
         post_process=True,
-        device=device
+        device=device,
     )
     return mtcnn
 
@@ -45,7 +46,6 @@ def load_dataset():
         root=DATASET_DIR,
         split="train",
         download=True,
-        # min_k_per_person=70,
         people=["Ariel_Sharon", "Colin_Powell", "George_W_Bush"],
         transform=transform,
         preprocessed=False,
@@ -63,9 +63,12 @@ def preprocess_image(image):
     return transform(cropped)
 
 
-model = load_model()
+model = load_classifier()
 mtcnn = load_mtcnn()
 dataset = load_dataset()
+
+if 'rand_idx' not in st.session_state:
+    st.session_state.rand_idx = random.sample(range(len(dataset.data)), 4)
 
 st.title("Face Identity Prediction")
 st.write(
@@ -78,17 +81,15 @@ st.write(
     "incorrect data after the model has been trained - an increasingly expensive process."
 )
 
+if st.button("Get new choices"):
+    st.session_state.rand_idx = random.sample(range(len(dataset.data)), 4)
+    files = [dataset.data[i] for i in random.sample(range(len(dataset.data)), 4)]
+
 img = image_select(
     "Select an image to classify",
-    [
-        "data/lfw-py/lfw_funneled/Zinedine_Zidane/Zinedine_Zidane_0001.jpg",
-        "data/lfw-py/lfw_funneled/Zinedine_Zidane/Zinedine_Zidane_0002.jpg",
-        "data/lfw-py/lfw_funneled/Zinedine_Zidane/Zinedine_Zidane_0003.jpg",
-        "data/lfw-py/lfw_funneled/Zinedine_Zidane/Zinedine_Zidane_0004.jpg",
-    ],
+    [dataset.data[i] for i in st.session_state.rand_idx],
     use_container_width=False,
 )
-
 
 idx_to_class = {i: c for c, i in dataset.class_to_idx.items()}
 preprocessed_img = preprocess_image(img)
