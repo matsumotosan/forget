@@ -22,18 +22,36 @@ transform = T.Compose(
 )
 
 
+@st.cache_resource
 def load_classifier():
     return MNISTClassifier.load_from_checkpoint(CKPT_PATH).eval().to(device)
 
 
-model = load_classifier()
+@st.cache_resource
+def load_dataset():
+    return MNIST(root=DATA_DIR, train=False, download=True)
+
 
 st.title("Digit Recognition")
-st.write("For our final project, we are interested in exploring ")
+st.header("Why MNIST?")
+st.write(
+    "Given the time constraints of our project, we thought it would be wise to test unlearning methods "
+    "on a simple dataset like MNIST before moving on to larger datasets requiring larger models. We "
+    'realize that MNIST is a "solved problem", however, we intend for the focus of our project to be '
+    "on the machine unlearning aspect and believe MNIST will be a suitable first dataset for that."
+)
+
+st.write(
+    "With machine unlearning, we hope to train the MNIST classifier to unlearn or forget specific digits."
+    "As mentioned above, the model may learn to give the illusion of unlearning a specific digit. One way we "
+    "intend on testing this hypothesis is by evaluating the model's representation of images before the final layer."
+)
+
 
 # Test on MNIST test set
+st.header("Test on MNIST test set")
 with st.spinner("Downloading MNIST dataset"):
-    mnist_dataset = MNIST(root=DATA_DIR, train=False, download=True)
+    mnist_dataset = load_dataset()
 
 if "rand_idx" not in st.session_state:
     st.session_state.rand_idx = random.sample(range(len(mnist_dataset)), 4)
@@ -46,6 +64,7 @@ img = image_select(
     use_container_width=False,
 )
 
+model = load_classifier()
 test_pred = model(transform(img).to(device))
 test_probs = test_pred.softmax(dim=1).squeeze().cpu().detach().numpy()
 
@@ -75,7 +94,7 @@ img = img.convert("L")
 img = img.resize((28, 28))
 
 st.write(
-    "The image below shows the preprocessed image passed to the model for classification."
+    "The image below shows the preprocessed image passed to the model for classification. "
     "Note that the scale has been increased 10-fold for visualization purposes."
 )
 
@@ -91,12 +110,4 @@ st.bar_chart(
     x_label="Probability",
     y_label="Digit",
     horizontal=True,
-)
-
-st.subheader("Why MNIST?")
-st.write(
-    "Given the time constraints of our project, we thought it would be wise to test unlearning methods "
-    "on a simple dataset like MNIST before moving on to larger datasets requiring larger models. We "
-    'realize that MNIST is a "solved problem", however, we intend for the focus of our project to be '
-    "on the machine unlearning aspect and believe MNIST will be a suitable first dataset for that."
 )

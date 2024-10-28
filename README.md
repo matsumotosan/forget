@@ -44,7 +44,9 @@ This section is not completed yet.
 ## Installing dependencies
 
 The following instructions assumes that a package manager such as `pip` or `uv`
-is installed. Create a virtual environment based on the package manager of your
+is installed.
+
+Create a virtual environment based on the package manager of your
 choice:
 
 ```sh

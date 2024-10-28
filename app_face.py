@@ -23,6 +23,7 @@ transform = T.Compose(
 )
 
 
+@st.cache_resource
 def load_classifier():
     return FaceClassifier.load_from_checkpoint(CKPT_PATH).eval().to(device)
 
@@ -40,6 +41,7 @@ def load_mtcnn():
     return mtcnn
 
 
+@st.cache_resource
 def load_dataset():
     with st.spinner("Downloading LFW dataset"):
         dataset = LFWClassificationDataset(
@@ -54,10 +56,12 @@ def load_dataset():
 
 
 def preprocess_image(image):
-    print(image)
     img = Image.open(image)
     cropped = mtcnn(img)
+
+    st.write("What the model sees")
     st.image(T.ToPILImage()(cropped))
+
     if cropped is None:
         st.error("Did not detect a face in the image.")
     return transform(cropped)
@@ -72,13 +76,26 @@ if "rand_idx" not in st.session_state:
 
 st.title("Face Identity Prediction")
 st.write(
-    "For our final project, we are interested in exploring "
-    "machine unlearning for facial identification. Machine unlearning refers "
-    "to the idea of remove a specific subset of data points from a model whilst maintaining "
-    "the model's performance on the remaining data. This concept has gained traction recently "
-    "admist growing concerns about privacy and security. They are also of great interest "
-    "from an engineering perspective as they could be used to mitigate the effects of outliers and "
-    "incorrect data after the model has been trained - an increasingly expensive process."
+    "The application for which we are interested in exploring "
+    "machine unlearning is facial identification. The task inherently involves sensitive information "
+    "(images of people) that individuals may or may not have consented to the use of. Furthermore, "
+    "once an image of a person has been used in training a facial recognition system, it is unclear "
+    "if and how the individual's image can be eliminated from the model. For this reason, we are "
+    "interested in extending our findings from experimenting with the MNIST dataset to commonly used "
+    "facial recognition benchmarks such as Labeled Faces in the Wild (LFW)."
+)
+
+st.write(
+    "We chose to use the InceptionResnetV1 as our architecture for facial recognition given the ease "
+    "with which it can be adapted for a variety of face recognition tasks. The images are first "
+    "preprocessed by a Multitask Cascaded Convolutional Network (MTCNN) to detect and crop out the "
+    "face in the image (if it exists) prior to being passed to the InceptionResnetV1 model. We "
+    "trained the model from scratch on a modified version of the LFW dataset for classification."
+)
+
+st.write(
+    "If you see the error `IndexError: list index out of range`, please try refreshing the page or "
+    "interacting with a button on this page."
 )
 
 if st.button("Get new choices"):
@@ -97,7 +114,6 @@ probs = softmax(logits, dim=0).detach().numpy()
 topk = np.argsort(probs)
 
 st.bar_chart(
-    # x=[idx_to_class[k] for k in topk],
     data=probs[topk[:5]],
     x_label="Probability",
     horizontal=True,
@@ -106,18 +122,15 @@ st.bar_chart(
 st.success(f"Predicted Identity: **{idx_to_class[topk[0]]}**")
 
 st.write(
-    "Note that our model is collapsing during trainin to simply predict the class with the largest number of samples (Colin Powell)."
+    "Note: Our model is collapsing during training to predict the class with the largest number of samples (Colin Powell). "
     "We were unable to determine the cause of this but intend to address the issue for the final project."
- )
+)
 
 st.subheader("Why train a model from scratch?")
 st.write(
     "Although a pretrained model would provide us with a better starting point, "
-    "we thought that it would interfere with our future investigations into the unlearning process. "
-    "As such, we chose a popular architecture for facial recognition and decided to train it from scratch as performance is not our end goal."
-)
-
-st.subheader("Why isn't the model trained on the entire dataset?")
-st.write(
-    "The LFW dataset was originally intended for facial verification instead of facial identification. "
+    "we thought that it would interfere with our future investigations into the unlearning process as a finetuned "
+    "model may retain additional knowledge compared to model we trained from scratch. "
+    "As such, we chose a popular architecture for facial recognition and decided to train it from "
+    "scratch as achieving state-of-the-art performance is not our end goal."
 )
