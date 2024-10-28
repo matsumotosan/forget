@@ -10,6 +10,7 @@ from torchvision import transforms as T
 from torchvision.datasets import MNIST
 
 
+DATA_DIR = "forget_data"
 CKPT_PATH = "forget_downloads/version_43/checkpoints/epoch=2-step=5157.ckpt"
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -31,7 +32,8 @@ st.title("Digit Recognition")
 st.write("For our final project, we are interested in exploring ")
 
 # Test on MNIST test set
-mnist_dataset = MNIST(root="data", train=False, download=True)
+with st.spinner("Downloading MNIST dataset"):
+    mnist_dataset = MNIST(root=DATA_DIR, train=False, download=True)
 
 if "rand_idx" not in st.session_state:
     st.session_state.rand_idx = random.sample(range(len(mnist_dataset)), 4)

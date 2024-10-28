@@ -11,7 +11,7 @@ from streamlit_image_select import image_select
 from torch.nn.functional import softmax
 
 
-DATASET_DIR = "./data"
+DATASET_DIR = "forget_data"
 CKPT_PATH = "forget_downloads/version_38/checkpoints/epoch=19-step=520.ckpt"
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -24,8 +24,7 @@ transform = T.Compose(
 
 
 def load_classifier():
-    model = FaceClassifier.load_from_checkpoint(CKPT_PATH).eval().to(device)
-    return model
+    return FaceClassifier.load_from_checkpoint(CKPT_PATH).eval().to(device)
 
 
 def load_mtcnn():
@@ -42,14 +41,15 @@ def load_mtcnn():
 
 
 def load_dataset():
-    dataset = LFWClassificationDataset(
-        root=DATASET_DIR,
-        split="train",
-        download=True,
-        people=["Ariel_Sharon", "Colin_Powell", "George_W_Bush"],
-        transform=transform,
-        preprocessed=False,
-    )
+    with st.spinner("Downloading LFW dataset"):
+        dataset = LFWClassificationDataset(
+            root=DATASET_DIR,
+            split="train",
+            download=True,
+            people=["Ariel_Sharon", "Colin_Powell", "George_W_Bush"],
+            transform=transform,
+            preprocessed=False,
+        )
     return dataset
 
 
@@ -104,6 +104,11 @@ st.bar_chart(
 )
 
 st.success(f"Predicted Identity: **{idx_to_class[topk[0]]}**")
+
+st.write(
+    "Note that our model is collapsing during trainin to simply predict the class with the largest number of samples (Colin Powell)."
+    "We were unable to determine the cause of this but intend to address the issue for the final project."
+ )
 
 st.subheader("Why train a model from scratch?")
 st.write(
