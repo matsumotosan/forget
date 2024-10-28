@@ -34,6 +34,9 @@ Run the app by executing the command:
 streamlit run app.py
 ```
 
+**Note: If a page on the application seems stuck or is otherwise not working, please try refreshing the page
+or interacting with a component on the page.**
+
 ### Docker container
 
 This section is not completed yet.
