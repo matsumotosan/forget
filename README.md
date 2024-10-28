@@ -34,6 +34,9 @@ Run the app by executing the command:
 streamlit run app.py
 ```
 
+If this is your first time running a Streamlit application, you may be asked if you would like to register
+your email. You are not required to register your email for the application and may leave it blank.
+
 **Note: If a page on the application seems stuck or is otherwise not working, please try refreshing the page
 or interacting with a component on the page.**
 
