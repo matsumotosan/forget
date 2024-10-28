@@ -12,7 +12,7 @@ from torch.nn.functional import softmax
 
 
 DATASET_DIR = "./data"
-CKPT_PATH = "lightning_logs/version_38/checkpoints/epoch=19-step=520.ckpt"
+CKPT_PATH = "forget_downloads/version_38/checkpoints/epoch=19-step=520.ckpt"
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 transform = T.Compose(

@@ -10,7 +10,7 @@ from torchvision import transforms as T
 from torchvision.datasets import MNIST
 
 
-CKPT_PATH = "lightning_logs/version_43/checkpoints/epoch=2-step=5157.ckpt"
+CKPT_PATH = "forget_downloads/version_43/checkpoints/epoch=2-step=5157.ckpt"
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 transform = T.Compose(
