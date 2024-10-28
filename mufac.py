@@ -1,25 +1,16 @@
-import glob
 import os
-import random
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, Dataset
+from torchvision import models, transforms
 import time
 import warnings
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from PIL import Image
 
 warnings.filterwarnings("ignore")
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import torchvision
-import torchvision.transforms.functional as TF
-from sklearn import linear_model, model_selection
-from torch.utils.data import DataLoader, Dataset
-from torchvision import datasets, models, transforms
 
 
 def parsing(meta_data):
@@ -121,13 +112,17 @@ train_transform = transforms.Compose(
 test_transform = transforms.Compose([transforms.Resize(128), transforms.ToTensor()])
 unseen_transform = transforms.Compose([transforms.Resize(128), transforms.ToTensor()])
 
-train_dataset = UnlearningDataset(train_meta_data, train_image_directory, train_transform)
+train_dataset = UnlearningDataset(
+    train_meta_data, train_image_directory, train_transform
+)
 train_dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 
 test_dataset = UnlearningDataset(test_meta_data, test_image_directory, test_transform)
 test_dataloader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
-unseen_dataset = UnlearningDataset(unseen_meta_data, unseen_image_directory, unseen_transform)
+unseen_dataset = UnlearningDataset(
+    unseen_meta_data, unseen_image_directory, unseen_transform
+)
 unseen_dataloader = DataLoader(unseen_dataset, batch_size=64, shuffle=False)
 
 model = models.resnet18(pretrained=False)
@@ -136,7 +131,7 @@ model.fc = nn.Linear(num_features, 8)
 # model = model.cuda()
 # model_path = f'last_checkpoint_epoch_{num_original_epochs}.pth' # If you train the original model from scratch.
 model_path = "./model/last_checkpoint_epoch_30.pth"
-model.load_state_dict(torch.load(model_path, map_location='cpu'))
+model.load_state_dict(torch.load(model_path, map_location="cpu"))
 
 criterion = nn.CrossEntropyLoss()
 log_step = 30
@@ -154,25 +149,49 @@ def show_images(images, labels, preds=None, nrow=6, save_path=None):
             ax = axs[idx]
             img_np = img.numpy().transpose((1, 2, 0))
             ax.imshow(img_np)
-            ax.axis('off')
+            ax.axis("off")
 
-            ax.text(5, 5, label, color='white', fontsize=13,  ha='left', va='top',
-                    bbox=dict(facecolor='black', alpha=0.5, boxstyle='round,pad=0.1'))
-            ax.text(5, 10, pred, color='red', fontsize=13,  ha='left', va='top',
-                    bbox=dict(facecolor='black', alpha=0.5, boxstyle='round,pad=0.1'))
+            ax.text(
+                5,
+                5,
+                label,
+                color="white",
+                fontsize=13,
+                ha="left",
+                va="top",
+                bbox=dict(facecolor="black", alpha=0.5, boxstyle="round,pad=0.1"),
+            )
+            ax.text(
+                5,
+                10,
+                pred,
+                color="red",
+                fontsize=13,
+                ha="left",
+                va="top",
+                bbox=dict(facecolor="black", alpha=0.5, boxstyle="round,pad=0.1"),
+            )
     else:
         for idx, (img, label) in enumerate(zip(images, labels)):
             ax = axs[idx]
             img_np = img.numpy().transpose((1, 2, 0))
             ax.imshow(img_np)
-            ax.axis('off')
+            ax.axis("off")
 
-            ax.text(5, 5, label, color='white', fontsize=13,  ha='left', va='top',
-                    bbox=dict(facecolor='black', alpha=0.5, boxstyle='round,pad=0.1'))
+            ax.text(
+                5,
+                5,
+                label,
+                color="white",
+                fontsize=13,
+                ha="left",
+                va="top",
+                bbox=dict(facecolor="black", alpha=0.5, boxstyle="round,pad=0.1"),
+            )
 
     plt.tight_layout(pad=0)
     if save_path:
-        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+        plt.savefig(save_path, bbox_inches="tight", dpi=300)
 
     plt.show(block=True)
 
@@ -190,7 +209,7 @@ def test():
 
         with torch.no_grad():
             outputs = model(imgs)
-            _, preds = torch.max(outputs, 1) # predictions
+            _, preds = torch.max(outputs, 1)  # predictions
             loss = criterion(outputs, labels)
 
         total += labels.shape[0]
@@ -205,7 +224,7 @@ def test():
         label_strs = [label_to_age[label.item()] for label in labels[:12]]
         pred_strs = [label_to_age[pred.item()] for pred in preds[:12]]
 
-        if (i == 0):
+        if i == 0:
             show_images(imgs[:12], label_strs, preds=pred_strs, nrow=6)
 
     print(f"test loss: {running_loss / total}, accuracy: {running_corrects / total}")

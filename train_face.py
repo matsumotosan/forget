@@ -1,9 +1,5 @@
-import numpy as np
 import lightning as L
-import matplotlib.pyplot as plt
 import torch
-from facenet_pytorch import MTCNN, fixed_image_standardization
-from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms as T
 

@@ -1,12 +1,11 @@
 import os
-from PIL import Image
-from facenet_pytorch import MTCNN
 from typing import Any, Callable, Optional
 from torchvision.datasets.lfw import _LFW
 
 
 class LFWClassificationDataset(_LFW):
     """Modified LFW Dataset containing people with a minimum of k images for classifiacation."""
+
     preprocessed_dir: str = "lfw_funneled_preprocessed-mtcnn"
 
     def __init__(
@@ -41,10 +40,14 @@ class LFWClassificationDataset(_LFW):
     def _get_people(self) -> tuple[list[str], list[int]]:
         data, targets = [], []
         with open(os.path.join(self.root, self.labels_file)) as f:
-            lines = f.readlines()[1:]   # ignore first line (number of samples in set - needed for crossfold val)
+            lines = f.readlines()[
+                1:
+            ]  # ignore first line (number of samples in set - needed for crossfold val)
             people = [line.strip().split("\t") for line in lines]
             for _, (identity, num_imgs) in enumerate(people):
-                if identity in self.class_to_idx:   # include in dataset if has more than k images
+                if (
+                    identity in self.class_to_idx
+                ):  # include in dataset if has more than k images
                     for num in range(1, int(num_imgs) + 1):
                         img = self._get_path(identity, num)
                         data.append(img)
@@ -96,4 +99,6 @@ class LFWClassificationDataset(_LFW):
         return img, target
 
     def extra_repr(self) -> str:
-        return super().extra_repr() + f"\nClasses (identities): {len(self.class_to_idx)}"
+        return (
+            super().extra_repr() + f"\nClasses (identities): {len(self.class_to_idx)}"
+        )

@@ -25,7 +25,9 @@ class MNISTDataModule(LightningDataModule):
             mnist_full = MNIST(self.data_dir, train=True, transform=self.transform)
             self.mnist_train, self.mnist_val = random_split(mnist_full, [55000, 5000])
         if stage == "test" or stage is None:
-            self.mnist_test = MNIST(self.data_dir, train=False, transform=self.transform)
+            self.mnist_test = MNIST(
+                self.data_dir, train=False, transform=self.transform
+            )
 
     def train_dataloader(self):
         return DataLoader(self.mnist_train, batch_size=self.batch_size)

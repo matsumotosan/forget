@@ -67,7 +67,7 @@ model = load_classifier()
 mtcnn = load_mtcnn()
 dataset = load_dataset()
 
-if 'rand_idx' not in st.session_state:
+if "rand_idx" not in st.session_state:
     st.session_state.rand_idx = random.sample(range(len(dataset.data)), 4)
 
 st.title("Face Identity Prediction")
@@ -115,5 +115,4 @@ st.write(
 st.subheader("Why isn't the model trained on the entire dataset?")
 st.write(
     "The LFW dataset was originally intended for facial verification instead of facial identification. "
-    ""
 )

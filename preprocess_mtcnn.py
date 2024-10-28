@@ -5,8 +5,6 @@ from facenet_pytorch import MTCNN
 from tqdm.contrib import tenumerate
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
-from PIL import Image
-import matplotlib.pyplot as plt
 import torchvision.transforms as T
 import torch
 
