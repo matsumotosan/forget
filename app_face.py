@@ -83,7 +83,6 @@ st.write(
 
 if st.button("Get new choices"):
     st.session_state.rand_idx = random.sample(range(len(dataset.data)), 4)
-    files = [dataset.data[i] for i in random.sample(range(len(dataset.data)), 4)]
 
 img = image_select(
     "Select an image to classify",
