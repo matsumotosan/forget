@@ -16,9 +16,23 @@ effects of outliers or outdated samples in the original training data.
 
 ### Locally
 
-To run the application natively, follow
-[installation instructions](#installing-dependencies) to install the project
+To run the application locally, follow
+[installation instructions](#installing-dependencies) to first install the project
 dependencies.
+
+Once the dependencies are installed, execute the following command in the root
+directory of the project to download model weights. The model weights will be
+downloaded into `forget_downloads` under the root directory of the project.
+
+```sh
+gdown --folder https://drive.google.com/drive/folders/1Z2mHXy4C7AiCNd9W6qNsq1Spin5n-zDC
+```
+
+Run the app by executing the command::
+
+```sh
+streamlit run app.py
+```
 
 ### Docker container
 
@@ -30,14 +44,16 @@ docker-compose up
 
 ## Installing dependencies
 
-First, create your virtual environment using one of the following commands::
+The following instructions assumes that a package manager such as `pip` or `uv`
+is installed. Create a virtual environment based on the package manager of your
+choice::
 
 ```sh
-# uv
-uv venv --python 3.11
-
 # venv
 python3.11 -m venv .venv
+
+# uv
+uv venv --python 3.11
 ```
 
 Once the virtual environment is created, activate the environment. Note that
@@ -67,10 +83,14 @@ To add or edit the dependencies, edit the `requirements.txt` re-install the depe
 
 ## Experiments
 
-Experiments were run on a GPU????.
+Experiments were run on an 2023 Apple M3 Pro with 18 GB of memory.
 
 Results can be reproduced by executing the scripts as follows::
 
 ```sh
-python experiments.py
+# Train MNIST classifier
+python train_mnist.py
+
+# Train face classifier
+python train_face.py
 ```
