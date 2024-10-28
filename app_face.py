@@ -93,9 +93,9 @@ st.write(
     "trained the model from scratch on a modified version of the LFW dataset for classification."
 )
 
-st.write(
-    "If you see the error `IndexError: list index out of range`, please try refreshing the page or "
-    "interacting with a button on this page."
+st.markdown(
+    ":red[If you see the error `IndexError: list index out of range`, please try refreshing the page or "
+    "interacting with a button on this page.]"
 )
 
 if st.button("Get new choices"):
