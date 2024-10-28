@@ -28,7 +28,7 @@ downloaded into `forget_downloads` under the root directory of the project.
 gdown --folder https://drive.google.com/drive/folders/1Z2mHXy4C7AiCNd9W6qNsq1Spin5n-zDC
 ```
 
-Run the app by executing the command::
+Run the app by executing the command:
 
 ```sh
 streamlit run app.py
@@ -36,17 +36,13 @@ streamlit run app.py
 
 ### Docker container
 
-To run the application in a Docker container, execute the following command::
-
-```sh
-docker-compose up
-```
+This section is not completed yet.
 
 ## Installing dependencies
 
 The following instructions assumes that a package manager such as `pip` or `uv`
 is installed. Create a virtual environment based on the package manager of your
-choice::
+choice:
 
 ```sh
 # venv
@@ -67,7 +63,7 @@ source .venv/bin/activate
 source .venv/bin/activate.fish
 ```
 
-Install the project dependencies using `pip` or `uv` with one of the following commands::
+Install the project dependencies using `pip` or `uv` with one of the following commands:
 
 ```sh
 # pip
@@ -85,7 +81,7 @@ To add or edit the dependencies, edit the `requirements.txt` re-install the depe
 
 Experiments were run on an 2023 Apple M3 Pro with 18 GB of memory.
 
-Results can be reproduced by executing the scripts as follows::
+Results can be reproduced by executing the scripts as follows:
 
 ```sh
 # Train MNIST classifier
