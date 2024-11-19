@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Subset
 from torchmetrics.classification import MulticlassAccuracy
 from torchvision import datasets, transforms
+from rich import print
 
 
 class SimpleNet(nn.Module):
@@ -29,41 +30,31 @@ LEARNING_RATE = 1e-3
 transform = transforms.Compose(
     [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
 )
+
+# Split training dataset into retain and forget subsets
 train_dataset = datasets.MNIST(
     root="./data", train=True, download=True, transform=transform
 )
+
+forget_class = 5
+forget_idx = np.where(train_dataset.targets == forget_class)[0]
+retain_idx = np.where(train_dataset.targets != forget_class)[0]
+
+forget_dataset = Subset(train_dataset, forget_idx)
+retain_dataset = Subset(train_dataset, retain_idx)
+
 test_dataset = datasets.MNIST(
     root="./data", train=False, download=True, transform=transform
 )
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+forget_loader = DataLoader(forget_dataset, batch_size=BATCH_SIZE, shuffle=True)
+retain_loader = DataLoader(retain_dataset, batch_size=BATCH_SIZE, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
-
-
-# def calc_accuracy():
-#     model.eval()
-#     correct = {i: 0 for i in range(10)}
-#     total = {i: 0 for i in range(10)}
-#
-#     with torch.no_grad():
-#         for images, labels in loader:
-#             outputs = model(images)
-#             _, predicted = torch.max(outputs.data, 1)
-#             for label, prediction in zip(labels, predicted):
-#                 if label == prediction:
-#                     correct[label.item()] += 1
-#                 total[label.item()] += 1
-#
-#     accuracy_per_class = {
-#         label: (correct[label] / total[label] * 100) if total[label] > 0 else 0
-#         for label in range(10)
-#     }
-#     return total_acc, accuracy_per_class
 
 
 def train(model, dataloader, criterion, optimizer, epochs):
     model.train()
-    # accuracy = Accuracy(task="multiclass", num_classes=len(train_dataset.classes))
     accuracy = MulticlassAccuracy(num_classes=len(train_dataset.classes), average=None)
 
     for epoch in range(epochs):
@@ -88,34 +79,71 @@ def train(model, dataloader, criterion, optimizer, epochs):
 
 def evaluate(model, dataloader):
     model.eval()
-    correct = 0
-    total = 0
+    accuracy = MulticlassAccuracy(num_classes=len(train_dataset.classes), average=None)
+
     with torch.no_grad():
         for images, labels in dataloader:
             outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-    accuracy = 100 * correct / total
-    return accuracy
+            accuracy.update(outputs, labels)
+
+    return accuracy.compute()
 
 
-# train with full dataset
+def unlearn(
+    model,
+    retain_dataloader,
+    forget_dataloader,
+    epochs,
+    retain_loop: bool = True,
+):
+    model.train()
+    accuracy = MulticlassAccuracy(num_classes=len(train_dataset.classes), average=None)
+
+    for epoch in range(epochs):
+        accuracy.reset()
+        running_loss = 0
+
+        # Forget loop
+        for images, labels in forget_dataloader:
+            optimizer.zero_grad()
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+            accuracy.update(outputs, labels)
+
+        # Retain loop
+        if retain_loop:
+            for images, labels in retain_dataloader:
+                pass
+
+        print(
+            f"Epoch {epoch+1} - "
+            f"loss: {running_loss/len(retain_dataloader)}, "
+            f"acc: {accuracy.compute()}"
+        )
+
+
+# Train with full dataset
 model = SimpleNet()
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
 train(model, train_loader, criterion, optimizer, EPOCHS)
 initial_accuracy = evaluate(model, test_loader)
-print(f"Accuracy: {initial_accuracy}%")
+print(f"Accuracy: {initial_accuracy}")
 
-# train with subset (remove '5')
-indices = np.where(train_dataset.targets != 5)[0]
-filtered_train_dataset = Subset(train_dataset, indices)
-filtered_train_loader = DataLoader(filtered_train_dataset, batch_size=64, shuffle=True)
+# Train with retain dataset (gold standard)
+model = SimpleNet()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+train(model, retain_loader, criterion, optimizer, EPOCHS)
+unlearn_exact_accuracy = evaluate(model, test_loader)
+print(f"Unlearned accuracy (exact): {unlearn_exact_accuracy}%")
 
-unlearned_model = SimpleNet()
-optimizer = optim.Adam(unlearned_model.parameters(), lr=LEARNING_RATE)
-train(unlearned_model, filtered_train_loader, criterion, optimizer, EPOCHS)
-unlearned_accuracy = evaluate(unlearned_model, test_loader)
-print(f"Unlearning accuracy (exact): {unlearned_accuracy}%")
+# Unlearning with KL divergence loss
+# model = SimpleNet()
+# optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+# unlearn(model, retain_loader, forget_loader, criterion, optimizer, EPOCHS)
+# unlearn_inexact_accuracy = evaluate(model, test_loader)
+# print(f"Unlearned accuracy (inexact): {unlearn_inexact_accuracy}%")
