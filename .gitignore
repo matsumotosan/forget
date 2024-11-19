@@ -163,7 +163,7 @@ cython_debug/
 
 data/
 forget_data/
-model/
+models/
 vgg_face_torch/
 *.gz
 lightning_logs/
