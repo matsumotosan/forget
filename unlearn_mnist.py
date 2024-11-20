@@ -1,7 +1,10 @@
 from copy import deepcopy
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,17 +12,20 @@ from rich import print
 from torch.utils.data import DataLoader, Subset, random_split
 from torchmetrics.classification import MulticlassAccuracy
 from torchvision import datasets, transforms
-
 from unlearn import unlearn
 
 DATA_DIR = "./data"
 MODEL_DIR = "./models"
+FIG_DIR = "./figures"
+
 BATCH_SIZE = 64
 TRAIN_EPOCHS = 3
 UNLEARN_EPOCHS = 5
 LEARNING_RATE = 1e-3
 UNLEARNING_RATE = 1e-3
 RETAIN_RATE = 1e-3
+
+sns.set_theme()
 
 
 class SimpleNet(nn.Module):
@@ -126,8 +132,8 @@ def main():
         print(f"Saving trained model to {trained_model_path}.")
         torch.save(trained_model.state_dict(), trained_model_path)
 
-    trained_acc = evaluate(trained_model, test_loader)
-    print(f"Trained accuracy: {trained_acc}")
+    acc_trained = evaluate(trained_model, test_loader)
+    print(f"Trained accuracy: {acc_trained}")
 
     # Retrain on retain dataset (gold standard)
     print("\n=== Retrain on retain dataset (gold standard) ===")
@@ -144,8 +150,8 @@ def main():
         print(f"Saving retrained model to {retrained_model_path}.")
         torch.save(retrained_model.state_dict(), retrained_model_path)
 
-    retrained_acc = evaluate(retrained_model, test_loader)
-    print(f"Retrained accuracy: {retrained_acc}")
+    acc_retrained = evaluate(retrained_model, test_loader)
+    print(f"Retrained accuracy: {acc_retrained}")
 
     # Unlearning with KL divergence loss (with retain step)
     print("\n=== Finetune with KLDiv loss (with retain step) ===")
@@ -168,9 +174,32 @@ def main():
         retain_step=True,
     )
 
-    unlearned_acc = evaluate(unlearned_model, test_loader)
-    print(f"Unlearned accuracy (with retain step): {unlearned_acc}")
-    print(f"Change in accuracy (unlearned_acc - trained_acc): {unlearned_acc - trained_acc}")
+    acc_unlearned = evaluate(unlearned_model, test_loader)
+    print(f"Unlearned accuracy (with retain step): {acc_unlearned}")
+    print(
+        f"Change in accuracy (acc_unlearned - acc_trained): {acc_unlearned - acc_trained}"
+    )
+
+    # Plot per-class accuracy
+    acc_df = pd.DataFrame(
+        {
+            "class": np.arange(10),
+            "acc_trained": acc_trained.cpu().detach().numpy(),
+            "acc_retrained": acc_retrained.cpu().detach().numpy(),
+            "acc_unlearned": acc_unlearned.cpu().detach().numpy(),
+        }
+    )
+
+    acc_df = acc_df.melt(
+        id_vars="class", value_vars=["acc_trained", "acc_retrained", "acc_unlearned"]
+    )
+
+    f, ax = plt.subplots(figsize=(8, 5))
+    sns.barplot(data=acc_df, x="class", y="value", hue="variable")
+    ax.set_title("Classwise accuracy on MNIST")
+    f.tight_layout()
+    plt.savefig(f"{FIG_DIR}/unlearn_mnist_class_acc.png", dpi=300)
+    plt.show()
 
 
 if __name__ == "__main__":
