@@ -8,6 +8,7 @@ from torchvision import datasets, transforms
 from rich import print
 from pathlib import Path
 from copy import deepcopy
+from unlearn import unlearn
 
 
 DATA_DIR = "./data"
@@ -15,6 +16,8 @@ MODEL_DIR = "./models"
 BATCH_SIZE = 64
 EPOCHS = 5
 LEARNING_RATE = 1e-3
+UNLEARNING_RATE = 1e-3
+RETAIN_RATE = 1e-3
 
 
 class SimpleNet(nn.Module):
@@ -68,71 +71,6 @@ def evaluate(model, dataloader):
     return accuracy.compute()
 
 
-def unlearn(
-    model,
-    retain_dataloader,
-    forget_dataloader,
-    val_dataloader,
-    retain_optimizer,
-    forget_optimizer,
-    epochs,
-    forget_criterion=nn.KLDivLoss(reduction="batchmean"),
-    retain_loop: bool = True,
-    retain_criterion: nn.Module = nn.CrossEntropyLoss(),
-):
-    retain_acc = MulticlassAccuracy(num_classes=10, average=None)
-    val_acc = MulticlassAccuracy(num_classes=10, average=None)
-
-    for epoch in range(epochs):
-        model.train()
-
-        retain_acc.reset()
-        val_acc.reset()
-
-        running_forget_loss = 0
-        running_retain_loss = 0
-        running_val_loss = 0
-
-        # Forget loop
-        for images, _ in forget_dataloader:
-            forget_optimizer.zero_grad()
-            outputs = model(images).softmax(dim=1)
-
-            # Minimize KL divergence from uniform logits
-            uniform_logits = torch.ones_like(outputs) / len(outputs)
-            forget_loss = forget_criterion(outputs, uniform_logits)
-            forget_loss.backward()
-            running_forget_loss += forget_loss.item()
-            forget_optimizer.step()
-
-        # Retain loop
-        if retain_loop:
-            for images, labels in retain_dataloader:
-                retain_optimizer.zero_grad()
-                outputs = model(images)
-                retain_loss = retain_criterion(outputs, labels)
-                retain_loss.backward()
-                retain_optimizer.step()
-                running_retain_loss += retain_loss.item()
-                retain_acc.update(outputs, labels)
-
-        # Validation on all classes
-        model.eval()
-        with torch.no_grad():
-            for images, labels in val_dataloader:
-                outputs = model(images)
-                val_loss = retain_criterion(outputs, labels)
-                running_val_loss += val_loss.item()
-                val_acc.update(outputs, labels)
-
-        print(
-            f"Epoch {epoch+1} - "
-            f"forget_loss: {running_forget_loss/len(retain_dataloader)}, "
-            f"val_loss: {running_val_loss/len(val_dataloader)}, "
-            f"val_acc: {val_acc.compute()}"
-        )
-
-
 def main():
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
@@ -172,7 +110,7 @@ def main():
     retrained_model_path = Path(f"{MODEL_DIR}/retrained_mnist.pt")
     criterion = nn.CrossEntropyLoss()
 
-    # Train with full dataset
+    # Train on original training dataset
     print("=== Standard training ===")
     trained_model = SimpleNet()
     if trained_model_path.exists():
@@ -188,7 +126,7 @@ def main():
     trained_acc = evaluate(trained_model, test_loader)
     print(f"Trained accuracy: {trained_acc}")
 
-    # Retrain with retain dataset (gold standard)
+    # Retrain on retain dataset (gold standard)
     print("\n=== Retrain on retain dataset (gold standard) ===")
     retrained_model = SimpleNet()
     if retrained_model_path.exists():
@@ -211,10 +149,10 @@ def main():
     unlearned_model = deepcopy(trained_model)
 
     unlearned_initial_acc = evaluate(unlearned_model, test_loader)
-    print(f"Trained accuracy: {unlearned_initial_acc}")
+    print(f"Trained accuracy (starting point for unlearning): {unlearned_initial_acc}")
 
-    forget_optimizer = optim.Adam(unlearned_model.parameters(), lr=LEARNING_RATE)
-    retain_optimizer = optim.Adam(unlearned_model.parameters(), lr=LEARNING_RATE)
+    forget_optimizer = optim.Adam(unlearned_model.parameters(), lr=UNLEARNING_RATE)
+    retain_optimizer = optim.Adam(unlearned_model.parameters(), lr=RETAIN_RATE)
 
     unlearn(
         unlearned_model,
