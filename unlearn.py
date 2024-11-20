@@ -4,6 +4,7 @@ from rich import print
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from torchmetrics.classification import MulticlassAccuracy
+import torch.nn.functional as F
 
 
 def unlearn(
@@ -14,7 +15,7 @@ def unlearn(
     retain_optimizer: Optimizer,
     forget_optimizer: Optimizer,
     epochs: int,
-    forget_criterion=nn.KLDivLoss(reduction="batchmean"),
+    forget_criterion: nn.Module = nn.KLDivLoss(reduction="batchmean"),
     retain_step: bool = True,
     retain_criterion: nn.Module = nn.CrossEntropyLoss(),
     verbose: bool = True,
@@ -35,10 +36,10 @@ def unlearn(
         # Forget step
         for images, _ in forget_dataloader:
             forget_optimizer.zero_grad()
-            outputs = model(images).softmax(dim=1)
+            outputs = F.log_softmax(model(images), dim=1)
 
             # Minimize KL divergence from uniform logits
-            uniform_logits = torch.ones_like(outputs) / len(outputs)
+            uniform_logits = F.softmax(torch.ones_like(outputs), dim=1)
             forget_loss = forget_criterion(outputs, uniform_logits)
             forget_loss.backward()
             running_forget_loss += forget_loss.item()
