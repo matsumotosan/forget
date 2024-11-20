@@ -196,6 +196,7 @@ def main():
         retain_optimizer,
         forget_optimizer,
         UNLEARN_EPOCHS,
+        forget_criterion=JSDLoss(reduction="batchmean"),
         retain_step=True,
     )
 
