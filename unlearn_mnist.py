@@ -7,12 +7,15 @@ import pandas as pd
 import seaborn as sns
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from rich import print
+from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader, Subset, random_split
 from torchmetrics.classification import MulticlassAccuracy
 from torchvision import datasets, transforms
 from unlearn import unlearn
+from torch import Tensor
 
 DATA_DIR = "./data"
 MODEL_DIR = "./models"
@@ -78,6 +81,28 @@ def evaluate(model, dataloader):
             accuracy.update(outputs, labels)
 
     return accuracy.compute()
+
+
+class JSDLoss(_Loss):
+    """Jensen-Shannon divergence loss."""
+
+    def __init__(
+        self,
+        size_average=None,
+        reduce=None,
+        reduction: str = "mean",
+        log_target: bool = False,
+    ) -> None:
+        super().__init__(size_average, reduce, reduction)
+        self.log_target = log_target
+
+    def forward(self, input: Tensor, target: Tensor) -> Tensor:
+        M = 0.5 * (input + target)
+        return 0.5 * F.kl_div(
+            input, M, reduction=self.reduction, log_target=self.log_target
+        ) + 0.5 * F.kl_div(
+            target, M, reduction=self.reduction, log_target=self.log_target
+        )
 
 
 def main():
