@@ -1,20 +1,22 @@
+from copy import deepcopy
+from pathlib import Path
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from rich import print
 from torch.utils.data import DataLoader, Subset, random_split
 from torchmetrics.classification import MulticlassAccuracy
 from torchvision import datasets, transforms
-from rich import print
-from pathlib import Path
-from copy import deepcopy
-from unlearn import unlearn
 
+from unlearn import unlearn
 
 DATA_DIR = "./data"
 MODEL_DIR = "./models"
 BATCH_SIZE = 64
-EPOCHS = 5
+TRAIN_EPOCHS = 3
+UNLEARN_EPOCHS = 5
 LEARNING_RATE = 1e-3
 UNLEARNING_RATE = 1e-3
 RETAIN_RATE = 1e-3
@@ -35,7 +37,7 @@ class SimpleNet(nn.Module):
         return x
 
 
-def train(model, dataloader, criterion, optimizer, epochs):
+def train(model, dataloader, criterion, optimizer, epochs, verbose: bool = True):
     model.train()
     accuracy = MulticlassAccuracy(num_classes=10, average=None)
 
@@ -52,11 +54,12 @@ def train(model, dataloader, criterion, optimizer, epochs):
             running_loss += loss.item()
             accuracy.update(outputs, labels)
 
-        print(
-            f"Epoch {epoch+1} - "
-            f"loss: {running_loss/len(dataloader)}, "
-            f"acc: {accuracy.compute()}"
-        )
+        if verbose:
+            print(
+                f"Epoch {epoch+1} - "
+                f"loss: {running_loss/len(dataloader)}, "
+                f"acc: {accuracy.compute()}"
+            )
 
 
 def evaluate(model, dataloader):
@@ -118,7 +121,7 @@ def main():
         trained_model.load_state_dict(torch.load(trained_model_path, weights_only=True))
     else:
         optimizer = optim.Adam(trained_model.parameters(), lr=LEARNING_RATE)
-        train(trained_model, train_loader, criterion, optimizer, EPOCHS)
+        train(trained_model, train_loader, criterion, optimizer, TRAIN_EPOCHS)
 
         print(f"Saving trained model to {trained_model_path}.")
         torch.save(trained_model.state_dict(), trained_model_path)
@@ -161,12 +164,13 @@ def main():
         val_loader,
         retain_optimizer,
         forget_optimizer,
-        EPOCHS,
-        retain_loop=True,
+        UNLEARN_EPOCHS,
+        retain_step=True,
     )
 
     unlearned_acc = evaluate(unlearned_model, test_loader)
     print(f"Unlearned accuracy (with retain step): {unlearned_acc}")
+    print(f"Change in accuracy (unlearned_acc - trained_acc): {unlearned_acc - trained_acc}")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,10 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from rich import print
 from torch.optim import Optimizer
+from torch.utils.data import DataLoader
 from torchmetrics.classification import MulticlassAccuracy
+
 
 def unlearn(
     model: nn.Module,
@@ -13,7 +15,7 @@ def unlearn(
     forget_optimizer: Optimizer,
     epochs: int,
     forget_criterion=nn.KLDivLoss(reduction="batchmean"),
-    retain_loop: bool = True,
+    retain_step: bool = True,
     retain_criterion: nn.Module = nn.CrossEntropyLoss(),
     verbose: bool = True,
 ):
@@ -30,7 +32,7 @@ def unlearn(
         running_retain_loss = 0
         running_val_loss = 0
 
-        # Forget loop
+        # Forget step
         for images, _ in forget_dataloader:
             forget_optimizer.zero_grad()
             outputs = model(images).softmax(dim=1)
@@ -42,8 +44,8 @@ def unlearn(
             running_forget_loss += forget_loss.item()
             forget_optimizer.step()
 
-        # Retain loop
-        if retain_loop:
+        # Retain step
+        if retain_step:
             for images, labels in retain_dataloader:
                 retain_optimizer.zero_grad()
                 outputs = model(images)
