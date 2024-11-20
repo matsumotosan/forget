@@ -139,7 +139,7 @@ def main():
         )
     else:
         optimizer = optim.Adam(retrained_model.parameters(), lr=LEARNING_RATE)
-        train(retrained_model, retain_loader, criterion, optimizer, EPOCHS)
+        train(retrained_model, retain_loader, criterion, optimizer, TRAIN_EPOCHS)
 
         print(f"Saving retrained model to {retrained_model_path}.")
         torch.save(retrained_model.state_dict(), retrained_model_path)
