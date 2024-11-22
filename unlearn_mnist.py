@@ -12,7 +12,7 @@ import torch.optim as optim
 from loss import JSDLoss
 from rich import print
 from torchmetrics.classification import MulticlassAccuracy
-from mnist_datamodule import UnlearningDataModule
+from unlearning_datamodule import UnlearningDataModule
 from unlearn import unlearn
 
 DATA_DIR = "./data"
@@ -85,7 +85,7 @@ def main():
     data_dir = "./data"
     forget_class = (5, 7)
 
-    # Get dataloader for each dataset split
+    # Initialize unlearning datamodule
     dm = UnlearningDataModule(
         data_dir=data_dir,
         forget_class=torch.tensor(forget_class),
@@ -93,6 +93,7 @@ def main():
 
     dm.setup()
 
+    # Get dataloader for each dataset split
     train_loader = dm.train_dataloader()
     val_loader = dm.val_dataloader()
     test_loader = dm.test_dataloader()
