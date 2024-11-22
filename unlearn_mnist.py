@@ -7,12 +7,12 @@ import pandas as pd
 import seaborn as sns
 import torch
 import torch.nn as nn
+from torch.nn.modules import KLDivLoss
 import torch.optim as optim
 from loss import JSDLoss
 from rich import print
-from torch.utils.data import DataLoader, Subset, random_split
 from torchmetrics.classification import MulticlassAccuracy
-from torchvision import datasets, transforms
+from mnist_datamodule import UnlearningDataModule
 from unlearn import unlearn
 
 DATA_DIR = "./data"
@@ -82,38 +82,22 @@ def evaluate(model, dataloader):
 
 
 def main():
-    transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+    data_dir = "./data"
+    forget_class = (5, 7)
+
+    # Get dataloader for each dataset split
+    dm = UnlearningDataModule(
+        data_dir=data_dir,
+        forget_class=torch.tensor(forget_class),
     )
 
-    train_dataset = datasets.MNIST(
-        root=DATA_DIR, train=True, download=True, transform=transform
-    )
+    dm.setup()
 
-    test_dataset = datasets.MNIST(
-        root=DATA_DIR, train=False, download=True, transform=transform
-    )
-
-    train_dataset, val_dataset = random_split(train_dataset, [0.9, 0.1])
-
-    # Split training dataset into retain and forget subsets
-    forget_class = 5
-    forget_idx = np.where(
-        train_dataset.dataset.targets[train_dataset.indices] == forget_class
-    )[0]
-    retain_idx = np.where(
-        train_dataset.dataset.targets[train_dataset.indices] != forget_class
-    )[0]
-
-    forget_dataset = Subset(train_dataset, forget_idx)
-    retain_dataset = Subset(train_dataset, retain_idx)
-
-    # Create dataloaders for each dataset split
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    forget_loader = DataLoader(forget_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    retain_loader = DataLoader(retain_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
+    train_loader = dm.train_dataloader()
+    val_loader = dm.val_dataloader()
+    test_loader = dm.test_dataloader()
+    forget_loader = dm.forget_dataloader()
+    retain_loader = dm.retain_dataloader()
 
     # Set model paths
     trained_model_path = Path(f"{MODEL_DIR}/trained_mnist.pt")
@@ -163,6 +147,7 @@ def main():
 
     forget_optimizer = optim.Adam(unlearned_model.parameters(), lr=UNLEARNING_RATE)
     retain_optimizer = optim.Adam(unlearned_model.parameters(), lr=RETAIN_RATE)
+    forget_criterion = KLDivLoss(reduction="batchmean")
 
     unlearn(
         unlearned_model,
@@ -172,7 +157,7 @@ def main():
         retain_optimizer,
         forget_optimizer,
         UNLEARN_EPOCHS,
-        forget_criterion=JSDLoss(reduction="batchmean"),
+        forget_criterion=forget_criterion,
         retain_step=True,
     )
 
