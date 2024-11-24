@@ -26,7 +26,7 @@ UNLEARNING_RATE = 1e-3
 RETAIN_RATE = 1e-3
 
 sns.set_theme()
-
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class SimpleNet(nn.Module):
     def __init__(self):
@@ -75,12 +75,12 @@ def main():
         trained_model.load_state_dict(torch.load(trained_model_path, weights_only=True))
     else:
         optimizer = optim.Adam(trained_model.parameters(), lr=LEARNING_RATE)
-        train(trained_model, train_loader, criterion, optimizer, TRAIN_EPOCHS)
+        train(trained_model, train_loader, criterion, optimizer, TRAIN_EPOCHS, device)
 
         print(f"Saving trained model to {trained_model_path}.")
         torch.save(trained_model.state_dict(), trained_model_path)
 
-    acc_trained = evaluate(trained_model, test_loader, 10)
+    acc_trained = evaluate(trained_model, test_loader, 10, device)
     print(f"Trained accuracy: {acc_trained}")
 
     # Retrain on retain dataset (gold standard)
@@ -93,19 +93,19 @@ def main():
         )
     else:
         optimizer = optim.Adam(retrained_model.parameters(), lr=LEARNING_RATE)
-        train(retrained_model, retain_loader, criterion, optimizer, TRAIN_EPOCHS)
+        train(retrained_model, retain_loader, criterion, optimizer, TRAIN_EPOCHS, device)
 
         print(f"Saving retrained model to {retrained_model_path}.")
         torch.save(retrained_model.state_dict(), retrained_model_path)
 
-    acc_retrained = evaluate(retrained_model, test_loader, 10)
+    acc_retrained = evaluate(retrained_model, test_loader, 10, device)
     print(f"Retrained accuracy: {acc_retrained}")
 
     # Unlearning with KL divergence loss (with retain step)
     print("\n=== Finetune with KLDiv loss (with retain step) ===")
     unlearned_model = deepcopy(trained_model)
 
-    unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10)
+    unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10, device)
     print(f"Trained accuracy (starting point for unlearning): {unlearned_initial_acc}")
 
     forget_optimizer = optim.Adam(unlearned_model.parameters(), lr=UNLEARNING_RATE)
@@ -120,12 +120,13 @@ def main():
         retain_optimizer=retain_optimizer,
         forget_optimizer=forget_optimizer,
         epochs=UNLEARN_EPOCHS,
+        device=device,
         forget_criterion=forget_criterion,
         forget_step=False,
         retain_step=True,
     )
 
-    acc_unlearned = evaluate(unlearned_model, test_loader, 10)
+    acc_unlearned = evaluate(unlearned_model, test_loader, 10, device)
     print(f"Unlearned accuracy (with retain step): {acc_unlearned}")
     print(
         f"Change in accuracy (acc_unlearned - acc_trained): {acc_unlearned - acc_trained}"

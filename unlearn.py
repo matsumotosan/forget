@@ -15,6 +15,7 @@ def unlearn(
     retain_optimizer: Optimizer,
     forget_optimizer: Optimizer,
     epochs: int,
+    device,
     forget_step: bool = True,
     retain_step: bool = True,
     forget_criterion: nn.Module = nn.KLDivLoss(reduction="batchmean"),
