@@ -80,56 +80,61 @@ def main():
     acc_trained = evaluate(trained_model, test_loader, 10)
     print(f"Trained accuracy: {acc_trained}")
 
-    # # Unlearning with KL divergence loss (with retain step)
-    # print("\n=== Finetune with KLDiv loss (with retain step) ===")
-    # unlearned_model = deepcopy(trained_model)
-    #
-    # unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10)
-    # print(f"Trained accuracy (starting point for unlearning): {unlearned_initial_acc}")
-    #
-    # forget_optimizer = optim.Adam(unlearned_model.parameters(), lr=UNLEARNING_RATE)
-    # retain_optimizer = optim.Adam(unlearned_model.parameters(), lr=RETAIN_RATE)
-    # forget_criterion = KLDivLoss(reduction="batchmean")
-    #
-    # unlearn(
-    #     model=unlearned_model,
-    #     retain_dataloader=retain_loader,
-    #     forget_dataloader=forget_loader,
-    #     val_dataloader=val_loader,
-    #     retain_optimizer=retain_optimizer,
-    #     forget_optimizer=forget_optimizer,
-    #     epochs=UNLEARN_EPOCHS,
-    #     forget_criterion=forget_criterion,
-    #     forget_step=False,
-    #     retain_step=True,
-    # )
-    #
-    # acc_unlearned = evaluate(unlearned_model, test_loader, 10)
-    # print(f"Unlearned accuracy (with retain step): {acc_unlearned}")
-    # print(
-    #     f"Change in accuracy (acc_unlearned - acc_trained): {acc_unlearned - acc_trained}"
-    # )
-    #
-    # # Plot per-class accuracy
-    # acc_df = pd.DataFrame(
-    #     {
-    #         "class": np.arange(10),
-    #         "acc_trained": acc_trained.cpu().detach().numpy(),
-    #         # "acc_retrained": acc_retrained.cpu().detach().numpy(),
-    #         "acc_unlearned": acc_unlearned.cpu().detach().numpy(),
-    #     }
-    # )
-    #
-    # acc_df = acc_df.melt(
-    #     id_vars="class", value_vars=["acc_trained", "acc_retrained", "acc_unlearned"]
-    # )
-    #
-    # f, ax = plt.subplots(figsize=(8, 5))
-    # sns.barplot(data=acc_df, x="class", y="value", hue="variable")
-    # ax.set_title("Classwise accuracy on cifar10")
-    # f.tight_layout()
-    # plt.savefig(f"{FIG_DIR}/unlearn_cifar10_class_acc.png", dpi=300)
-    # plt.show()
+    # Unlearning with KL divergence loss (with retain step)
+    print("\n=== Finetune with KLDiv loss (with retain step) ===")
+    unlearned_model = deepcopy(trained_model)
+
+    unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10)
+    print(f"Trained accuracy (starting point for unlearning): {unlearned_initial_acc}")
+
+    forget_optimizer = optim.Adam(unlearned_model.parameters(), lr=UNLEARNING_RATE)
+    retain_optimizer = optim.Adam(unlearned_model.parameters(), lr=RETAIN_RATE)
+    forget_criterion = KLDivLoss(reduction="batchmean")
+
+    unlearn(
+        model=unlearned_model,
+        retain_dataloader=retain_loader,
+        forget_dataloader=forget_loader,
+        val_dataloader=val_loader,
+        retain_optimizer=retain_optimizer,
+        forget_optimizer=forget_optimizer,
+        epochs=UNLEARN_EPOCHS,
+        forget_criterion=forget_criterion,
+        forget_step=True,
+        retain_step=True,
+    )
+
+    acc_unlearned = evaluate(unlearned_model, test_loader, 10)
+    print(f"Unlearned accuracy (with retain step): {acc_unlearned}")
+    print(
+        f"Change in accuracy (acc_unlearned - acc_trained): {acc_unlearned - acc_trained}"
+    )
+
+    # Plot per-class accuracy
+    acc_df = pd.DataFrame(
+        {
+            "class": np.arange(10),
+            "acc_trained": acc_trained.cpu().detach().numpy(),
+            # "acc_retrained": acc_retrained.cpu().detach().numpy(),
+            "acc_unlearned": acc_unlearned.cpu().detach().numpy(),
+        }
+    )
+
+    acc_df = acc_df.melt(
+        id_vars="class",
+        value_vars=[
+            "acc_trained",
+            # "acc_retrained",
+            "acc_unlearned",
+        ],
+    )
+
+    f, ax = plt.subplots(figsize=(8, 5))
+    sns.barplot(data=acc_df, x="class", y="value", hue="variable")
+    ax.set_title("Classwise accuracy on cifar10")
+    f.tight_layout()
+    plt.savefig(f"{FIG_DIR}/unlearn_cifar10_class_acc.png", dpi=300)
+    plt.show()
 
 
 if __name__ == "__main__":
