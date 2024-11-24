@@ -15,8 +15,9 @@ def unlearn(
     retain_optimizer: Optimizer,
     forget_optimizer: Optimizer,
     epochs: int,
-    forget_criterion: nn.Module = nn.KLDivLoss(reduction="batchmean"),
+    forget_step: bool = True,
     retain_step: bool = True,
+    forget_criterion: nn.Module = nn.KLDivLoss(reduction="batchmean"),
     retain_criterion: nn.Module = nn.CrossEntropyLoss(),
     verbose: bool = True,
 ):
@@ -34,16 +35,17 @@ def unlearn(
         running_val_loss = 0
 
         # Forget step
-        for images, _ in forget_dataloader:
-            forget_optimizer.zero_grad()
-            outputs = F.log_softmax(model(images), dim=1)
+        if forget_step:
+            for images, _ in forget_dataloader:
+                forget_optimizer.zero_grad()
+                outputs = F.log_softmax(model(images), dim=1)
 
-            # Minimize KL divergence from uniform logits
-            uniform_logits = F.softmax(torch.ones_like(outputs), dim=1)
-            forget_loss = forget_criterion(outputs, uniform_logits)
-            forget_loss.backward()
-            running_forget_loss += forget_loss.item()
-            forget_optimizer.step()
+                # Minimize KL divergence from uniform logits
+                uniform_logits = F.softmax(torch.ones_like(outputs), dim=1)
+                forget_loss = forget_criterion(outputs, uniform_logits)
+                forget_loss.backward()
+                running_forget_loss += forget_loss.item()
+                forget_optimizer.step()
 
         # Retain step
         if retain_step:

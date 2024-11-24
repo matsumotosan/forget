@@ -158,6 +158,7 @@ def main():
         forget_optimizer=forget_optimizer,
         epochs=UNLEARN_EPOCHS,
         forget_criterion=forget_criterion,
+        forget_step=False,
         retain_step=True,
     )
 
