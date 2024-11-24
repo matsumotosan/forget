@@ -11,7 +11,7 @@ from torch.nn.modules import KLDivLoss
 import torch.optim as optim
 from rich import print
 from torchmetrics.classification import MulticlassAccuracy
-from unlearning_datamodule import UnlearningDataModule
+from unlearning_datamodule import MNISTUnlearningDataModule
 from unlearn import unlearn
 
 DATA_DIR = "./data"
@@ -85,7 +85,7 @@ def main():
     forget_class = (5, 7)
 
     # Initialize unlearning datamodule
-    dm = UnlearningDataModule(
+    dm = MNISTUnlearningDataModule(
         data_dir=data_dir,
         forget_class=torch.tensor(forget_class),
     )
