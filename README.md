@@ -92,8 +92,8 @@ Experiments were run on an 2023 Apple M3 Pro with 18 GB of memory.
 Results can be reproduced by executing the scripts as follows:
 
 ```sh
-# Train MNIST classifier
-python train_mnist.py
+# Unlearn MNIST
+python unlearn_mnist.py
 
 # Train face classifier
 python train_face.py
