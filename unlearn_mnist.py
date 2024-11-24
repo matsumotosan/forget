@@ -9,7 +9,6 @@ import torch
 import torch.nn as nn
 from torch.nn.modules import KLDivLoss
 import torch.optim as optim
-from loss import JSDLoss
 from rich import print
 from torchmetrics.classification import MulticlassAccuracy
 from unlearning_datamodule import UnlearningDataModule
@@ -21,7 +20,7 @@ FIG_DIR = "./figures"
 
 BATCH_SIZE = 64
 TRAIN_EPOCHS = 3
-UNLEARN_EPOCHS = 5
+UNLEARN_EPOCHS = 3
 LEARNING_RATE = 1e-3
 UNLEARNING_RATE = 1e-3
 RETAIN_RATE = 1e-3
@@ -69,8 +68,8 @@ def train(model, dataloader, criterion, optimizer, epochs, verbose: bool = True)
             )
 
 
-def evaluate(model, dataloader):
-    accuracy = MulticlassAccuracy(num_classes=10, average=None)
+def evaluate(model, dataloader, n_classes):
+    accuracy = MulticlassAccuracy(n_classes, average=None)
 
     model.eval()
     with torch.no_grad():
@@ -118,7 +117,7 @@ def main():
         print(f"Saving trained model to {trained_model_path}.")
         torch.save(trained_model.state_dict(), trained_model_path)
 
-    acc_trained = evaluate(trained_model, test_loader)
+    acc_trained = evaluate(trained_model, test_loader, 10)
     print(f"Trained accuracy: {acc_trained}")
 
     # Retrain on retain dataset (gold standard)
@@ -136,14 +135,14 @@ def main():
         print(f"Saving retrained model to {retrained_model_path}.")
         torch.save(retrained_model.state_dict(), retrained_model_path)
 
-    acc_retrained = evaluate(retrained_model, test_loader)
+    acc_retrained = evaluate(retrained_model, test_loader, 10)
     print(f"Retrained accuracy: {acc_retrained}")
 
     # Unlearning with KL divergence loss (with retain step)
     print("\n=== Finetune with KLDiv loss (with retain step) ===")
     unlearned_model = deepcopy(trained_model)
 
-    unlearned_initial_acc = evaluate(unlearned_model, test_loader)
+    unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10)
     print(f"Trained accuracy (starting point for unlearning): {unlearned_initial_acc}")
 
     forget_optimizer = optim.Adam(unlearned_model.parameters(), lr=UNLEARNING_RATE)
@@ -151,18 +150,18 @@ def main():
     forget_criterion = KLDivLoss(reduction="batchmean")
 
     unlearn(
-        unlearned_model,
-        retain_loader,
-        forget_loader,
-        val_loader,
-        retain_optimizer,
-        forget_optimizer,
-        UNLEARN_EPOCHS,
+        model=unlearned_model,
+        retain_dataloader=retain_loader,
+        forget_dataloader=forget_loader,
+        val_dataloader=val_loader,
+        retain_optimizer=retain_optimizer,
+        forget_optimizer=forget_optimizer,
+        epochs=UNLEARN_EPOCHS,
         forget_criterion=forget_criterion,
         retain_step=True,
     )
 
-    acc_unlearned = evaluate(unlearned_model, test_loader)
+    acc_unlearned = evaluate(unlearned_model, test_loader, 10)
     print(f"Unlearned accuracy (with retain step): {acc_unlearned}")
     print(
         f"Change in accuracy (acc_unlearned - acc_trained): {acc_unlearned - acc_trained}"
