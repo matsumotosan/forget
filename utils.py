@@ -4,15 +4,16 @@ from torchmetrics.classification import MulticlassAccuracy
 
 def train(model, dataloader, criterion, optimizer, epochs, device, verbose: bool = True):
     model.train()
-    accuracy = MulticlassAccuracy(num_classes=10, average=None)
+    accuracy = MulticlassAccuracy(num_classes=10, average=None).to(device)
 
     for epoch in range(epochs):
         accuracy.reset()
         running_loss = 0
 
         for images, labels in dataloader:
-            images.to(device)
-            labels.to(device)
+            images = images.to(device)
+            labels = labels.to(device)
+
             optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs, labels)
@@ -30,16 +31,14 @@ def train(model, dataloader, criterion, optimizer, epochs, device, verbose: bool
 
 
 def evaluate(model, dataloader, n_classes, device):
-    accuracy = MulticlassAccuracy(n_classes, average=None)
+    accuracy = MulticlassAccuracy(n_classes, average=None).to(device)
 
     model.eval()
-    with torch.no_grad():
-        for images, labels in dataloader:
-            images.to(device)
-            labels.to(device)
-            outputs = model(images)
-            accuracy.update(outputs, labels)
+    for images, labels in dataloader:
+        images = images.to(device)
+        labels = labels.to(device)
+
+        outputs = model(images)
+        accuracy.update(outputs, labels)
 
     return accuracy.compute()
-
-

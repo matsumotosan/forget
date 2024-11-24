@@ -46,7 +46,6 @@ def load_resnet18(weights_path="models/weights_resnet18_cifar10.pth"):
     weights = torch.load(weights_path, map_location=DEVICE)
     model = resnet18(num_classes=10)
     model.load_state_dict(weights)
-    model.to(DEVICE)
     return model
 
 
@@ -84,7 +83,7 @@ def main():
 
     # Unlearning with KL divergence loss (with retain step)
     print("\n=== Finetune with KLDiv loss (with retain step) ===")
-    unlearned_model = deepcopy(trained_model).to(DEVICE)
+    unlearned_model = load_resnet18(weights_path=trained_model_path).to(DEVICE)
 
     unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10, DEVICE)
     print(f"Trained accuracy (starting point for unlearning): {unlearned_initial_acc}")

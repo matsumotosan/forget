@@ -68,7 +68,7 @@ def main():
 
     # Train on original training dataset
     print("=== Standard training ===")
-    trained_model = SimpleNet()
+    trained_model = SimpleNet().to(device)
     if trained_model_path.exists():
         print(f"Loading pretrained model from {trained_model_path}.")
         trained_model.load_state_dict(torch.load(trained_model_path, weights_only=True))
@@ -84,7 +84,7 @@ def main():
 
     # Retrain on retain dataset (gold standard)
     print("\n=== Retrain on retain dataset (gold standard) ===")
-    retrained_model = SimpleNet()
+    retrained_model = SimpleNet().to(device)
     if retrained_model_path.exists():
         print(f"Loading retrained model from {retrained_model_path}.")
         retrained_model.load_state_dict(
@@ -102,7 +102,7 @@ def main():
 
     # Unlearning with KL divergence loss (with retain step)
     print("\n=== Finetune with KLDiv loss (with retain step) ===")
-    unlearned_model = deepcopy(trained_model)
+    unlearned_model = trained_model
 
     unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10, device)
     print(f"Trained accuracy (starting point for unlearning): {unlearned_initial_acc}")

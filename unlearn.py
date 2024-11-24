@@ -22,8 +22,8 @@ def unlearn(
     retain_criterion: nn.Module = nn.CrossEntropyLoss(),
     verbose: bool = True,
 ):
-    retain_acc = MulticlassAccuracy(num_classes=10, average=None)
-    val_acc = MulticlassAccuracy(num_classes=10, average=None)
+    retain_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
+    val_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
 
     for epoch in range(epochs):
         model.train()
@@ -38,6 +38,8 @@ def unlearn(
         # Forget step
         if forget_step:
             for images, _ in forget_dataloader:
+                images = images.to(device)
+
                 forget_optimizer.zero_grad()
                 outputs = F.log_softmax(model(images), dim=1)
 
@@ -51,6 +53,9 @@ def unlearn(
         # Retain step
         if retain_step:
             for images, labels in retain_dataloader:
+                images = images.to(device)
+                labels = labels.to(device)
+
                 retain_optimizer.zero_grad()
                 outputs = model(images)
                 retain_loss = retain_criterion(outputs, labels)
@@ -61,12 +66,14 @@ def unlearn(
 
         # Validation on all classes
         model.eval()
-        with torch.no_grad():
-            for images, labels in val_dataloader:
-                outputs = model(images)
-                val_loss = retain_criterion(outputs, labels)
-                running_val_loss += val_loss.item()
-                val_acc.update(outputs, labels)
+        for images, labels in val_dataloader:
+            images = images.to(device)
+            labels = labels.to(device)
+
+            outputs = model(images)
+            val_loss = retain_criterion(outputs, labels)
+            running_val_loss += val_loss.item()
+            val_acc.update(outputs, labels)
 
         if verbose:
             print(
