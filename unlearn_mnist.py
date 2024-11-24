@@ -44,12 +44,11 @@ class SimpleNet(nn.Module):
 
 
 def main():
-    data_dir = "./data"
     forget_class = (5, 7)
 
     # Initialize unlearning datamodule
     dm = MNISTUnlearningDataModule(
-        data_dir=data_dir,
+        data_dir=DATA_DIR,
         forget_class=torch.tensor(forget_class),
     )
 
