@@ -17,7 +17,6 @@ from unlearn import unlearn
 from unlearning_datamodule import CIFAR10UnlearningDataModule, cifar10_transform
 from utils import evaluate, train
 from torchvision.models import resnet18
-from torch.utils.data import DataLoader
 
 DATA_DIR = "./data"
 MODEL_DIR = "./models"
@@ -51,7 +50,7 @@ def load_resnet18(weights_path="models/weights_resnet18_cifar10.pth"):
 
 def main():
     # Choose from ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-    forget_class = ("airplane",)
+    forget_class = ("airplane", "ship")
     ds = CIFAR10(root=DATA_DIR, download=True)
 
     # Initialize unlearning datamodule

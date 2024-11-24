@@ -1,16 +1,19 @@
-import torch
 from torchmetrics.classification import MulticlassAccuracy
+from tqdm import tqdm
 
 
-def train(model, dataloader, criterion, optimizer, epochs, device, verbose: bool = True):
+def train(
+    model, dataloader, criterion, optimizer, epochs, device, verbose: bool = True
+):
     model.train()
     accuracy = MulticlassAccuracy(num_classes=10, average=None).to(device)
 
     for epoch in range(epochs):
+        print(f"Epoch {epoch+1}")
         accuracy.reset()
         running_loss = 0
 
-        for images, labels in dataloader:
+        for images, labels in tqdm(dataloader, desc="train"):
             images = images.to(device)
             labels = labels.to(device)
 
@@ -24,9 +27,7 @@ def train(model, dataloader, criterion, optimizer, epochs, device, verbose: bool
 
         if verbose:
             print(
-                f"Epoch {epoch+1} - "
-                f"loss: {running_loss/len(dataloader)}, "
-                f"acc: {accuracy.compute()}"
+                f"loss: {running_loss/len(dataloader)}, " f"acc: {accuracy.compute()}"
             )
 
 

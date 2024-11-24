@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from rich import print
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from torchmetrics.classification import MulticlassAccuracy
-import torch.nn.functional as F
+from tqdm import tqdm
 
 
 def unlearn(
@@ -26,6 +27,7 @@ def unlearn(
     val_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
 
     for epoch in range(epochs):
+        print(f"Epoch {epoch+1}")
         model.train()
 
         retain_acc.reset()
@@ -37,7 +39,7 @@ def unlearn(
 
         # Forget step
         if forget_step:
-            for images, _ in forget_dataloader:
+            for images, _ in tqdm(forget_dataloader, desc="forget"):
                 images = images.to(device)
 
                 forget_optimizer.zero_grad()
@@ -52,7 +54,7 @@ def unlearn(
 
         # Retain step
         if retain_step:
-            for images, labels in retain_dataloader:
+            for images, labels in tqdm(retain_dataloader, desc="retain"):
                 images = images.to(device)
                 labels = labels.to(device)
 
@@ -66,7 +68,7 @@ def unlearn(
 
         # Validation on all classes
         model.eval()
-        for images, labels in val_dataloader:
+        for images, labels in tqdm(val_dataloader, desc="val"):
             images = images.to(device)
             labels = labels.to(device)
 
@@ -77,7 +79,6 @@ def unlearn(
 
         if verbose:
             print(
-                f"Epoch {epoch+1} - "
                 f"forget_loss: {running_forget_loss/len(retain_dataloader)}, "
                 f"val_loss: {running_val_loss/len(val_dataloader)}, "
                 f"val_acc: {val_acc.compute()}"

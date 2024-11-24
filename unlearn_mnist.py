@@ -1,4 +1,3 @@
-from copy import deepcopy
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -25,8 +24,11 @@ LEARNING_RATE = 1e-3
 UNLEARNING_RATE = 1e-3
 RETAIN_RATE = 1e-3
 
+FROM_SCRATCH = True
+
 sns.set_theme()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class SimpleNet(nn.Module):
     def __init__(self):
@@ -69,7 +71,7 @@ def main():
     # Train on original training dataset
     print("=== Standard training ===")
     trained_model = SimpleNet().to(device)
-    if trained_model_path.exists():
+    if trained_model_path.exists() and not FROM_SCRATCH:
         print(f"Loading pretrained model from {trained_model_path}.")
         trained_model.load_state_dict(torch.load(trained_model_path, weights_only=True))
     else:
@@ -85,14 +87,16 @@ def main():
     # Retrain on retain dataset (gold standard)
     print("\n=== Retrain on retain dataset (gold standard) ===")
     retrained_model = SimpleNet().to(device)
-    if retrained_model_path.exists():
+    if retrained_model_path.exists() and not FROM_SCRATCH:
         print(f"Loading retrained model from {retrained_model_path}.")
         retrained_model.load_state_dict(
             torch.load(retrained_model_path, weights_only=True)
         )
     else:
         optimizer = optim.Adam(retrained_model.parameters(), lr=LEARNING_RATE)
-        train(retrained_model, retain_loader, criterion, optimizer, TRAIN_EPOCHS, device)
+        train(
+            retrained_model, retain_loader, criterion, optimizer, TRAIN_EPOCHS, device
+        )
 
         print(f"Saving retrained model to {retrained_model_path}.")
         torch.save(retrained_model.state_dict(), retrained_model_path)
