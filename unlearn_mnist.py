@@ -7,12 +7,12 @@ import pandas as pd
 import seaborn as sns
 import torch
 import torch.nn as nn
-from torch.nn.modules import KLDivLoss
 import torch.optim as optim
 from rich import print
-from torchmetrics.classification import MulticlassAccuracy
-from unlearning_datamodule import MNISTUnlearningDataModule
+from torch.nn.modules import KLDivLoss
 from unlearn import unlearn
+from unlearning_datamodule import MNISTUnlearningDataModule
+from utils import evaluate, train
 
 DATA_DIR = "./data"
 MODEL_DIR = "./models"
@@ -41,43 +41,6 @@ class SimpleNet(nn.Module):
         x = self.relu(self.fc1(x))
         x = self.fc2(x)
         return x
-
-
-def train(model, dataloader, criterion, optimizer, epochs, verbose: bool = True):
-    model.train()
-    accuracy = MulticlassAccuracy(num_classes=10, average=None)
-
-    for epoch in range(epochs):
-        accuracy.reset()
-        running_loss = 0
-
-        for images, labels in dataloader:
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            running_loss += loss.item()
-            accuracy.update(outputs, labels)
-
-        if verbose:
-            print(
-                f"Epoch {epoch+1} - "
-                f"loss: {running_loss/len(dataloader)}, "
-                f"acc: {accuracy.compute()}"
-            )
-
-
-def evaluate(model, dataloader, n_classes):
-    accuracy = MulticlassAccuracy(n_classes, average=None)
-
-    model.eval()
-    with torch.no_grad():
-        for images, labels in dataloader:
-            outputs = model(images)
-            accuracy.update(outputs, labels)
-
-    return accuracy.compute()
 
 
 def main():
