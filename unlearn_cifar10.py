@@ -14,8 +14,8 @@ from rich import print
 from torch.nn.modules import KLDivLoss
 from torchvision.datasets.cifar import CIFAR10
 from unlearn import unlearn
-from unlearning_datamodule import cifar10_transform
-from utils import evaluate
+from unlearning_datamodule import CIFAR10UnlearningDataModule, cifar10_transform
+from utils import evaluate, train
 from torchvision.models import resnet18
 from torch.utils.data import DataLoader
 
@@ -50,24 +50,24 @@ def load_resnet18(weights_path="models/weights_resnet18_cifar10.pth"):
 
 
 def main():
-    data_dir = "./data"
-    forget_class = (5, 7)
+    # Choose from ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+    forget_class = ("airplane",)
+    ds = CIFAR10(root=DATA_DIR)
 
-    # # Initialize unlearning datamodule
-    # dm = CIFAR10UnlearningDataModule(
-    #     data_dir=data_dir,
-    #     forget_class=torch.tensor(forget_class),
-    # )
-    #
-    # dm.setup()
-    #
-    # # Get dataloader for each dataset split
-    test_dataset = CIFAR10(root="./data", train=False, transform=cifar10_transform)
-    # train_loader = dm.train_dataloader()
-    # val_loader = dm.val_dataloader()
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
-    # forget_loader = dm.forget_dataloader()
-    # retain_loader = dm.retain_dataloader()
+    # Initialize unlearning datamodule
+    dm = CIFAR10UnlearningDataModule(
+        data_dir=DATA_DIR,
+        forget_class=[ds.class_to_idx[c] for c in forget_class],
+    )
+
+    dm.setup()
+
+    # Get dataloader for each dataset split
+    train_loader = dm.train_dataloader()
+    val_loader = dm.val_dataloader()
+    test_loader = dm.test_dataloader()
+    forget_loader = dm.forget_dataloader()
+    retain_loader = dm.retain_dataloader()
 
     # Set model paths
     trained_model_path = f"{MODEL_DIR}/weights_resnet18_cifar10.pt"
