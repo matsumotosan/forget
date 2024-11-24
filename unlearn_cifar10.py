@@ -23,7 +23,7 @@ DATA_DIR = "./data"
 MODEL_DIR = "./models"
 FIG_DIR = "./figures"
 
-BATCH_SIZE = 64
+BATCH_SIZE = 16
 TRAIN_EPOCHS = 3
 UNLEARN_EPOCHS = 3
 LEARNING_RATE = 1e-3
@@ -46,18 +46,20 @@ def load_resnet18(weights_path="models/weights_resnet18_cifar10.pth"):
     weights = torch.load(weights_path, map_location=DEVICE)
     model = resnet18(num_classes=10)
     model.load_state_dict(weights)
+    model.to(DEVICE)
     return model
 
 
 def main():
     # Choose from ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
     forget_class = ("airplane",)
-    ds = CIFAR10(root=DATA_DIR)
+    ds = CIFAR10(root=DATA_DIR, download=True)
 
     # Initialize unlearning datamodule
     dm = CIFAR10UnlearningDataModule(
         data_dir=DATA_DIR,
         forget_class=[ds.class_to_idx[c] for c in forget_class],
+        batch_size=BATCH_SIZE,
     )
 
     dm.setup()
@@ -76,15 +78,15 @@ def main():
 
     # Train on original training dataset
     print("=== Standard training ===")
-    trained_model = load_resnet18(weights_path=trained_model_path)
-    acc_trained = evaluate(trained_model, test_loader, 10)
+    trained_model = load_resnet18(weights_path=trained_model_path).to(DEVICE)
+    acc_trained = evaluate(trained_model, test_loader, 10, DEVICE)
     print(f"Trained accuracy: {acc_trained}")
 
     # Unlearning with KL divergence loss (with retain step)
     print("\n=== Finetune with KLDiv loss (with retain step) ===")
-    unlearned_model = deepcopy(trained_model)
+    unlearned_model = deepcopy(trained_model).to(DEVICE)
 
-    unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10)
+    unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10, DEVICE)
     print(f"Trained accuracy (starting point for unlearning): {unlearned_initial_acc}")
 
     forget_optimizer = optim.Adam(unlearned_model.parameters(), lr=UNLEARNING_RATE)
@@ -102,9 +104,10 @@ def main():
         forget_criterion=forget_criterion,
         forget_step=True,
         retain_step=True,
+        device=DEVICE,
     )
 
-    acc_unlearned = evaluate(unlearned_model, test_loader, 10)
+    acc_unlearned = evaluate(unlearned_model, test_loader, 10, DEVICE)
     print(f"Unlearned accuracy (with retain step): {acc_unlearned}")
     print(
         f"Change in accuracy (acc_unlearned - acc_trained): {acc_unlearned - acc_trained}"
