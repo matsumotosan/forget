@@ -9,7 +9,10 @@ mnist_transform = transforms.Compose(
 )
 
 cifar10_transform = transforms.Compose(
-    [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+    [
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ]
 )
 
 
@@ -19,7 +22,7 @@ class UnlearningDataModule:
     def __init__(
         self,
         data_dir: str,
-        forget_class: Tensor,
+        forget_class,
         batch_size: int = 32,
         transform=None,
     ) -> None:
@@ -87,6 +90,47 @@ class MNISTUnlearningDataModule(UnlearningDataModule):
         forget_mask = torch.isin(
             self.ds_train.dataset.targets[self.ds_train.indices], self.forget_class
         )
+
+        self.forget_idx = forget_mask.nonzero().flatten().tolist()
+        self.retain_idx = (~forget_mask).nonzero().flatten().tolist()
+
+        self.ds_forget = Subset(self.ds_train, self.forget_idx)
+        self.ds_retain = Subset(self.ds_train, self.retain_idx)
+
+
+class CIFAR10UnlearningDataModule(UnlearningDataModule):
+    """CIFAR-10 DataModule class for unlearning setting."""
+
+    def __init__(
+        self,
+        data_dir: str,
+        forget_class: list[int],
+        batch_size: int = 32,
+        transform=None,
+    ) -> None:
+        if transform is None:
+            transform = cifar10_transform
+
+        super().__init__(data_dir, forget_class, batch_size, transform)
+
+    def prepare_data(self) -> None:
+        CIFAR10(self.data_dir, train=True, download=True)
+        CIFAR10(self.data_dir, train=False, download=True)
+
+    def setup(self) -> None:
+        self.prepare_data()
+        self.ds_train = CIFAR10(
+            root=self.data_dir, train=True, download=True, transform=self.transform
+        )
+
+        self.ds_test = CIFAR10(
+            root=self.data_dir, train=False, download=True, transform=self.transform
+        )
+
+        self.ds_train, self.ds_val = random_split(self.ds_train, [0.9, 0.1])
+
+        # Split training dataset into retain and forget subsets
+        forget_mask = torch.isin(torch.tensor(self.ds_train.dataset.targets), torch.tensor(self.forget_class))
 
         self.forget_idx = forget_mask.nonzero().flatten().tolist()
         self.retain_idx = (~forget_mask).nonzero().flatten().tolist()
