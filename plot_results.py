@@ -21,15 +21,17 @@ def main(args):
     df = pd.DataFrame(data)
     if params["forget_step"] and not params["retain_step"]:
         setting = "forget"
-    if params["retain_step"] and not params["forget_step"]:
+    elif params["retain_step"] and not params["forget_step"]:
         setting = "retain"
-    else:
+    elif params["retain_step"] and params["forget_step"]:
         setting = "forget+retain"
+    else:
+        raise ValueError("Cannot have neither.")
 
     fig, ax = plt.subplots(figsize=(15, 8))
     sns.lineplot(data=df, x='Epoch', y='Accuracy', hue='Class', marker='o')
 
-    plt.title(f"{params['dataset'].upper()} Per-Class Accuracy Over Unlearning Epochs ({setting})")
+    plt.title(f"{params['dataset'].upper()} Per-Class Accuracy Over Unlearning Epochs ({setting} {params['forget_class']})")
     plt.xticks(df["Epoch"])
     plt.ylabel("Accuracy")
     plt.tight_layout()
