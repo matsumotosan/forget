@@ -2,9 +2,6 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 import seaborn as sns
 import torch
 import torch.nn as nn
@@ -33,7 +30,6 @@ FROM_SCRATCH = False
 FORGET = True
 RETAIN = True
 
-sns.set_theme()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 

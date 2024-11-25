@@ -6,6 +6,8 @@ from utils import read_json
 
 
 def main(args):
+    sns.set_theme()
+
     metrics = read_json(f"{args.exp_dir}/metrics.json")
     params = read_json(f"{args.exp_dir}/params.json")
 
