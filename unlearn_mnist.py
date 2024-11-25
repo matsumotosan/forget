@@ -1,3 +1,5 @@
+import os
+from datetime import datetime
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -12,6 +14,8 @@ from torch.nn.modules import KLDivLoss
 from unlearn import unlearn
 from unlearning_datamodule import MNISTUnlearningDataModule
 from utils import evaluate, train
+
+DATASET = "mnist"
 
 DATA_DIR = "./data"
 MODEL_DIR = "./models"
@@ -48,7 +52,15 @@ class SimpleNet(nn.Module):
         return x
 
 
+def setup_log_dir(dataset):
+    now = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    experiment_dir = f"{LOG_DIR}/{dataset}/{now}"
+    os.makedirs(experiment_dir)
+    return experiment_dir
+
+
 def main():
+    experiment_dir = setup_log_dir(DATASET)
     forget_class = (5, 7)
 
     # Initialize unlearning datamodule
@@ -130,7 +142,7 @@ def main():
         forget_optimizer=forget_optimizer,
         unlearn_epochs=UNLEARN_EPOCHS,
         device=device,
-        log_dir=LOG_DIR,
+        log_dir=experiment_dir,
         forget_criterion=forget_criterion,
         forget_step=FORGET,
         retain_step=RETAIN,
