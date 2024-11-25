@@ -1,8 +1,5 @@
-import os
-from datetime import datetime
 from pathlib import Path
 
-import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -10,7 +7,8 @@ from rich import print
 from torch.nn.modules import KLDivLoss
 from unlearn import unlearn
 from unlearning_datamodule import MNISTUnlearningDataModule
-from utils import evaluate, train
+from utils import evaluate, train, setup_log_dir
+from models import get_model
 
 DATASET = "mnist"
 
@@ -26,38 +24,17 @@ LEARNING_RATE = 1e-3
 UNLEARNING_RATE = 1e-3
 RETAIN_RATE = 1e-3
 
-FROM_SCRATCH = False
+FROM_SCRATCH = True
 FORGET = True
 RETAIN = True
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-class SimpleNet(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.flatten = nn.Flatten()
-        self.fc1 = nn.Linear(28 * 28, 128)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(128, 10)
-
-    def forward(self, x):
-        x = self.flatten(x)
-        x = self.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
-
-
-def setup_log_dir(dataset):
-    now = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    experiment_dir = f"{LOG_DIR}/{dataset}/{now}"
-    os.makedirs(experiment_dir)
-    return experiment_dir
-
 
 def main():
-    experiment_dir = setup_log_dir(DATASET)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    experiment_dir = setup_log_dir(LOG_DIR, DATASET)
     forget_class = (5, 7)
+
+    model = get_model(MODEL_DIR, DATASET, device)
 
     # Initialize unlearning datamodule
     dm = MNISTUnlearningDataModule(
@@ -81,23 +58,22 @@ def main():
 
     # Train on original training dataset
     print("=== Standard training ===")
-    trained_model = SimpleNet().to(device)
     if trained_model_path.exists() and not FROM_SCRATCH:
         print(f"Loading pretrained model from {trained_model_path}.")
-        trained_model.load_state_dict(torch.load(trained_model_path, weights_only=True))
+        model.load_state_dict(torch.load(trained_model_path, weights_only=True))
     else:
-        optimizer = optim.Adam(trained_model.parameters(), lr=LEARNING_RATE)
-        train(trained_model, train_loader, criterion, optimizer, TRAIN_EPOCHS, device)
+        optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+        train(model, train_loader, criterion, optimizer, TRAIN_EPOCHS, device)
 
         print(f"Saving trained model to {trained_model_path}.")
-        torch.save(trained_model.state_dict(), trained_model_path)
+        torch.save(model.state_dict(), trained_model_path)
 
-    acc_trained = evaluate(trained_model, test_loader, 10, device)
+    acc_trained = evaluate(model, test_loader, 10, device)
     print(f"Trained accuracy: {acc_trained}")
 
     # Retrain on retain dataset (gold standard)
     print("\n=== Retrain on retain dataset (gold standard) ===")
-    retrained_model = SimpleNet().to(device)
+    retrained_model = model = get_model(MODEL_DIR, DATASET, device)
     if retrained_model_path.exists() and not FROM_SCRATCH:
         print(f"Loading retrained model from {retrained_model_path}.")
         retrained_model.load_state_dict(
@@ -117,7 +93,7 @@ def main():
 
     # Unlearning with KL divergence loss (with retain step)
     print("\n=== Finetune with KLDiv loss (with retain step) ===")
-    unlearned_model = trained_model
+    unlearned_model = model
 
     unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10, device)
     print(f"Trained accuracy (starting point for unlearning): {unlearned_initial_acc}")

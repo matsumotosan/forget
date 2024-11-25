@@ -1,4 +1,6 @@
 import json
+import os
+from datetime import datetime
 from torchmetrics.classification import MulticlassAccuracy
 from tqdm import tqdm
 
@@ -55,3 +57,10 @@ def read_json(path):
     with open(path, "r") as f:
         data = json.load(f)
     return data
+
+
+def setup_log_dir(log_dir, dataset):
+    now = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    experiment_dir = f"{log_dir}/{dataset}/{now}"
+    os.makedirs(experiment_dir)
+    return experiment_dir
