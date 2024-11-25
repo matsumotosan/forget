@@ -1,8 +1,10 @@
+import numpy as np
 import os
 from argparse import ArgumentParser
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from utils import read_json
 
 
@@ -30,13 +32,20 @@ def main(args):
     else:
         raise ValueError("Cannot have neither.")
 
-    f, ax = plt.subplots(figsize=(10, 8))
-    sns.lineplot(data=df, x='Unlearning Epoch', y='Accuracy', hue='Class', marker='o')
-
-    ax.set_title(f"{params['dataset'].upper()} Per-Class Accuracy ({setting} {params['forget_class']})")
-    ax.set_xticks(df["Unlearning Epoch"])
+    f, ax = plt.subplots(1, 1, figsize=(12, 8))
+    sns.lineplot(data=df, x='Unlearning Epoch', y='Accuracy', hue='Class', marker='o', ax=ax)
+    ax.set_title(f"{params['dataset'].upper()} Per-Class Validation Accuracy\n({setting} {params['forget_class']})")
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_ylabel("Accuracy")
     ax.grid()
+
+    # sns.lineplot(x=np.arange(len(metrics["forget_loss"])), y=metrics["forget_loss"], ax=ax[1])
+    # sns.lineplot(x=np.arange(len(metrics["forget_loss"])), y=metrics["retain_loss"], ax=ax[1])
+    # sns.lineplot(x=np.arange(len(metrics["forget_loss"])), y=metrics["val_loss"], ax=ax[1])
+    # ax[1].set_title(f"{params['dataset'].upper()}\nLoss ({setting} {params['forget_class']})")
+    # ax[1].set_ylabel("Cross Entropy Loss")
+    # ax[1].grid()
+
     f.tight_layout()
 
     # plt.show()
