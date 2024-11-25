@@ -7,7 +7,7 @@ from rich import print
 from torch.nn.modules import KLDivLoss
 from unlearn import unlearn
 from unlearning_datamodule import MNISTUnlearningDataModule
-from utils import evaluate, train, setup_log_dir
+from utils import evaluate, train, setup_log_dir, save_json
 from models import get_model
 
 DATASET = "mnist"
@@ -16,6 +16,7 @@ DATA_DIR = "./data"
 MODEL_DIR = "./models"
 LOG_DIR = "./logs"
 
+FORGET_CLASS = (5, 7)
 BATCH_SIZE = 64
 TRAIN_EPOCHS = 3
 UNLEARN_EPOCHS = 3
@@ -23,7 +24,7 @@ LEARNING_RATE = 1e-3
 UNLEARNING_RATE = 1e-3
 RETAIN_RATE = 1e-3
 
-FROM_SCRATCH = True
+FROM_SCRATCH = False
 FORGET = True
 RETAIN = True
 
@@ -31,14 +32,28 @@ RETAIN = True
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     experiment_dir = setup_log_dir(LOG_DIR, DATASET)
-    forget_class = (5, 7)
+
+    # Save experiment settings
+    params = {
+        "dataset": DATASET,
+        "forget_class": FORGET_CLASS,
+        "batch_size": BATCH_SIZE,
+        "train_epochs": TRAIN_EPOCHS,
+        "unlearn_epochs": UNLEARN_EPOCHS,
+        "learning_rate": LEARNING_RATE,
+        "unlearning_rate": UNLEARNING_RATE,
+        "retain_rate": RETAIN_RATE,
+        "forget_step": FORGET,
+        "retain_step": RETAIN,
+    }
+    save_json(f"{experiment_dir}/params.json", params)
 
     model = get_model(MODEL_DIR, DATASET, device)
 
     # Initialize unlearning datamodule
     dm = MNISTUnlearningDataModule(
         data_dir=DATA_DIR,
-        forget_class=torch.tensor(forget_class),
+        forget_class=torch.tensor(FORGET_CLASS),
     )
 
     dm.setup()
@@ -67,7 +82,7 @@ def main():
         print(f"Saving trained model to {trained_model_path}.")
         torch.save(model.state_dict(), trained_model_path)
 
-    acc_trained = evaluate(model, test_loader, 10, device)
+    acc_trained, loss_trained = evaluate(model, test_loader, 10, device)
     print(f"Trained accuracy: {acc_trained}")
 
     # Retrain on retain dataset (gold standard)
@@ -87,25 +102,20 @@ def main():
         print(f"Saving retrained model to {retrained_model_path}.")
         torch.save(retrained_model.state_dict(), retrained_model_path)
 
-    acc_retrained = evaluate(retrained_model, test_loader, 10, device)
+    acc_retrained, loss_retrained = evaluate(retrained_model, test_loader, 10, device)
     print(f"Retrained accuracy: {acc_retrained}")
 
     # Unlearning with KL divergence loss (with retain step)
     print("\n=== Finetune with KLDiv loss (with retain step) ===")
-    unlearned_model = model
-
-    unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10, device)
-    print(f"Trained accuracy (starting point for unlearning): {unlearned_initial_acc}")
-
-    forget_optimizer = optim.Adam(unlearned_model.parameters(), lr=UNLEARNING_RATE)
-    retain_optimizer = optim.Adam(unlearned_model.parameters(), lr=RETAIN_RATE)
+    forget_optimizer = optim.Adam(model.parameters(), lr=UNLEARNING_RATE)
+    retain_optimizer = optim.Adam(model.parameters(), lr=RETAIN_RATE)
     forget_criterion = KLDivLoss(reduction="batchmean")
 
     if not FORGET or not RETAIN:
         raise ValueError("At least one of FORGET or RETAIN must be True.")
 
     unlearn(
-        model=unlearned_model,
+        model=model,
         retain_dataloader=retain_loader,
         forget_dataloader=forget_loader,
         val_dataloader=val_loader,
@@ -119,7 +129,9 @@ def main():
         retain_step=RETAIN,
     )
 
-    acc_unlearned = evaluate(unlearned_model, test_loader, 10, device)
+    acc_unlearned, loss_unlearned = evaluate(model, test_loader, 10, device)
+
+    # Print final metrics
     base_msg = "Unlearned accuracy"
     if FORGET and not RETAIN:
         setting = "forget"
@@ -129,8 +141,9 @@ def main():
         setting = "forget and retain"
 
     print(f"{base_msg} ({setting}): {acc_unlearned}")
+    acc_delta = [x - y for x, y in zip(acc_unlearned, acc_trained)]
     print(
-        f"Change in accuracy (acc_unlearned - acc_trained): {acc_unlearned - acc_trained}"
+        f"Change in accuracy (acc_unlearned - acc_trained): {acc_delta}"
     )
 
 

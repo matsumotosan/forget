@@ -7,7 +7,18 @@ from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from torchmetrics.classification import MulticlassAccuracy
 from tqdm import tqdm
-from utils import save_json
+from utils import save_json, evaluate
+
+
+def print_metrics(metrics, epoch=-1) -> None:
+    print(
+        f"forget_loss: {metrics['forget_loss'][epoch]}\n"
+        f"retain_loss: {metrics['retain_loss'][epoch]}\n"
+        f"val_loss: {metrics['val_loss'][epoch]}\n"
+        f"forget_acc: {metrics['forget_acc'][epoch]}\n"
+        f"retain_acc: {metrics['retain_acc'][epoch]}\n"
+        f"val_acc: {metrics['val_acc'][epoch]}\n"
+    )
 
 
 def unlearn(
@@ -32,23 +43,35 @@ def unlearn(
         os.makedirs(ckpt_dir)
     torch.save(model, f"{ckpt_dir}/epoch-0.pt")
 
-    retain_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
-    val_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
-
-    # Initialize parameters and metrics to save
-    params = {
-        "unlearn_epochs": unlearn_epochs,
-        "forget_step": forget_step,
-        "retain_step": retain_step,
-    }
-    save_json(f"{log_dir}/params.json", params)
-
     metrics = {
         "forget_loss": [],
+        "forget_acc": [],
         "retain_loss": [],
+        "retain_acc": [],
         "val_loss": [],
         "val_acc": [],
     }
+
+    # Save initial metrics
+    forget_acc_initial, forget_loss_initial = evaluate(model, forget_dataloader, 10, device, forget=True)
+    retain_acc_initial, retain_loss_initial = evaluate(model, retain_dataloader, 10, device)
+    val_acc_initial, val_loss_initial = evaluate(model, val_dataloader, 10, device)
+
+    metrics["forget_loss"].append(forget_loss_initial)
+    metrics["retain_loss"].append(retain_loss_initial)
+    metrics["val_loss"].append(val_loss_initial)
+
+    metrics["forget_acc"].append(forget_acc_initial)
+    metrics["retain_acc"].append(retain_acc_initial)
+    metrics["val_acc"].append(val_acc_initial)
+
+    if verbose:
+        print("Metrics before unlearning - ")
+        print_metrics(metrics)
+
+    forget_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
+    retain_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
+    val_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
 
     for epoch in range(unlearn_epochs):
         print(f"Epoch {epoch+1}")
@@ -63,8 +86,9 @@ def unlearn(
 
         # Forget step
         if forget_step:
-            for images, _ in tqdm(forget_dataloader, desc="forget"):
+            for images, labels in tqdm(forget_dataloader, desc="forget"):
                 images = images.to(device)
+                labels = labels.to(device)
 
                 forget_optimizer.zero_grad()
                 outputs = F.log_softmax(model(images), dim=1)
@@ -75,6 +99,7 @@ def unlearn(
                 forget_loss.backward()
                 running_forget_loss += forget_loss.item()
                 forget_optimizer.step()
+                forget_acc.update(outputs, labels)
 
         # Retain step
         if retain_step:
@@ -105,15 +130,13 @@ def unlearn(
         metrics["forget_loss"].append(running_forget_loss / len(forget_dataloader))
         metrics["retain_loss"].append(running_retain_loss / len(retain_dataloader))
         metrics["val_loss"].append(running_val_loss / len(val_dataloader))
+
+        metrics["forget_acc"].append(forget_acc.compute().tolist())
+        metrics["retain_acc"].append(retain_acc.compute().tolist())
         metrics["val_acc"].append(val_acc.compute().tolist())
 
         if verbose:
-            print(
-                f"forget_loss: {metrics['forget_loss'][-1]}, "
-                f"retain_loss: {metrics['retain_loss'][-1]}, "
-                f"val_loss: {metrics['val_loss'][-1]}, "
-                f"val_acc: {metrics['val_acc'][-1]}"
-            )
+            print_metrics(metrics)
 
         # Save model
         torch.save(model, f"{ckpt_dir}/epoch-{epoch+1}.pt")

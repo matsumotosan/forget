@@ -1,5 +1,7 @@
+import torch.nn as nn
 import json
 import os
+import torch
 from datetime import datetime
 from torchmetrics.classification import MulticlassAccuracy
 from tqdm import tqdm
@@ -34,18 +36,25 @@ def train(
             )
 
 
-def evaluate(model, dataloader, n_classes, device):
+def evaluate(model, dataloader, n_classes, device, forget: bool = False):
     accuracy = MulticlassAccuracy(n_classes, average=None).to(device)
+    criterion = nn.CrossEntropyLoss()
+    loss = 0
 
     model.eval()
     for images, labels in dataloader:
         images = images.to(device)
+        outputs = model(images)
+
+        if forget:
+            labels = torch.ones_like(labels)
         labels = labels.to(device)
 
-        outputs = model(images)
+        loss += criterion(outputs, labels).item()
         accuracy.update(outputs, labels)
-
-    return accuracy.compute()
+    
+    loss /= len(dataloader)
+    return accuracy.compute().tolist(), loss
 
 
 def save_json(path, data):
