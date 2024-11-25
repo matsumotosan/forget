@@ -8,7 +8,7 @@ from torch.nn.modules import KLDivLoss
 from torchvision.datasets.cifar import CIFAR10
 from unlearn import unlearn
 from unlearning_datamodule import CIFAR10UnlearningDataModule
-from utils import evaluate, train, setup_log_dir
+from utils import evaluate, train, setup_log_dir, save_json
 from models import load_resnet18
 
 DATASET = "cifar10"
@@ -17,6 +17,7 @@ DATA_DIR = "./data"
 MODEL_DIR = "./models"
 LOG_DIR = "./logs"
 
+FORGET_CLASS = ("airplane", "ship")
 BATCH_SIZE = 16
 TRAIN_EPOCHS = 3
 UNLEARN_EPOCHS = 3
@@ -33,14 +34,28 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     experiment_dir = setup_log_dir(LOG_DIR, DATASET)
 
+    # Save experiment settings
+    params = {
+        "dataset": DATASET,
+        "forget_class": FORGET_CLASS,
+        "batch_size": BATCH_SIZE,
+        "train_epochs": TRAIN_EPOCHS,
+        "unlearn_epochs": UNLEARN_EPOCHS,
+        "learning_rate": LEARNING_RATE,
+        "unlearning_rate": UNLEARNING_RATE,
+        "retain_rate": RETAIN_RATE,
+        "forget_step": FORGET,
+        "retain_step": RETAIN,
+    }
+    save_json(f"{experiment_dir}/params.json", params)
+
     # Choose from ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-    forget_class = ("airplane", "ship")
     ds = CIFAR10(root=DATA_DIR, download=True)
 
     # Initialize unlearning datamodule
     dm = CIFAR10UnlearningDataModule(
         data_dir=DATA_DIR,
-        forget_class=[ds.class_to_idx[c] for c in forget_class],
+        forget_class=[ds.class_to_idx[c] for c in FORGET_CLASS],
         batch_size=BATCH_SIZE,
     )
 
@@ -61,25 +76,20 @@ def main():
     # Train on original training dataset
     print("=== Standard training ===")
     model = load_resnet18(trained_model_path, device).to(device)
-    acc_trained = evaluate(model, test_loader, 10, device)
+    acc_trained, loss_trained = evaluate(model, test_loader, 10, device)
     print(f"Trained accuracy: {acc_trained}")
 
     # Unlearning with KL divergence loss (with retain step)
-    print("\n=== Finetune with KLDiv loss (with retain step) ===")
-    unlearned_model = model
-
-    unlearned_initial_acc = evaluate(unlearned_model, test_loader, 10, device)
-    print(f"Trained accuracy (starting point for unlearning): {unlearned_initial_acc}")
-
-    forget_optimizer = optim.Adam(unlearned_model.parameters(), lr=UNLEARNING_RATE)
-    retain_optimizer = optim.Adam(unlearned_model.parameters(), lr=RETAIN_RATE)
+    print("\n=== Finetune with KLDiv loss ===")
+    forget_optimizer = optim.Adam(model.parameters(), lr=UNLEARNING_RATE)
+    retain_optimizer = optim.Adam(model.parameters(), lr=RETAIN_RATE)
     forget_criterion = KLDivLoss(reduction="batchmean")
 
     if not FORGET or not RETAIN:
         raise ValueError("At least one of FORGET or RETAIN must be True.")
 
     unlearn(
-        model=unlearned_model,
+        model=model,
         retain_dataloader=retain_loader,
         forget_dataloader=forget_loader,
         val_dataloader=val_loader,
@@ -89,11 +99,13 @@ def main():
         device=device,
         log_dir=experiment_dir,
         forget_criterion=forget_criterion,
-        forget_step=True,
-        retain_step=True,
+        forget_step=FORGET,
+        retain_step=RETAIN,
     )
 
-    acc_unlearned = evaluate(unlearned_model, test_loader, 10, device)
+    acc_unlearned, loss_unlearned = evaluate(model, test_loader, 10, device)
+
+    # Print final metrics
     base_msg = "Unlearned accuracy"
     if FORGET and not RETAIN:
         setting = "forget"
@@ -103,8 +115,9 @@ def main():
         setting = "forget and retain"
 
     print(f"{base_msg} ({setting}): {acc_unlearned}")
+    acc_delta = [x - y for x, y in zip(acc_unlearned, acc_trained)]
     print(
-        f"Change in accuracy (acc_unlearned - acc_trained): {acc_unlearned - acc_trained}"
+        f"Change in accuracy (acc_unlearned - acc_trained): {acc_delta}"
     )
 
 
