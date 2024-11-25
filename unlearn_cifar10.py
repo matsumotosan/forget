@@ -60,7 +60,7 @@ def main():
 
     # Train on original training dataset
     print("=== Standard training ===")
-    model = load_resnet18(trained_model_path, device)
+    model = load_resnet18(trained_model_path, device).to(device)
     acc_trained = evaluate(model, test_loader, 10, device)
     print(f"Trained accuracy: {acc_trained}")
 
