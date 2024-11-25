@@ -14,7 +14,6 @@ DATASET = "mnist"
 
 DATA_DIR = "./data"
 MODEL_DIR = "./models"
-FIG_DIR = "./figures"
 LOG_DIR = "./logs"
 
 BATCH_SIZE = 64
@@ -73,7 +72,7 @@ def main():
 
     # Retrain on retain dataset (gold standard)
     print("\n=== Retrain on retain dataset (gold standard) ===")
-    retrained_model = model = get_model(MODEL_DIR, DATASET, device)
+    retrained_model = get_model(MODEL_DIR, DATASET, device)
     if retrained_model_path.exists() and not FROM_SCRATCH:
         print(f"Loading retrained model from {retrained_model_path}.")
         retrained_model.load_state_dict(
