@@ -85,7 +85,7 @@ def main():
     retain_optimizer = optim.Adam(model.parameters(), lr=RETAIN_RATE)
     forget_criterion = KLDivLoss(reduction="batchmean")
 
-    if not FORGET or not RETAIN:
+    if not FORGET and not RETAIN:
         raise ValueError("At least one of FORGET or RETAIN must be True.")
 
     unlearn(
@@ -109,7 +109,7 @@ def main():
     base_msg = "Unlearned accuracy"
     if FORGET and not RETAIN:
         setting = "forget"
-    if RETAIN and not FORGET:
+    elif RETAIN and not FORGET:
         setting = "retain"
     else:
         setting = "forget and retain"

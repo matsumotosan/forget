@@ -26,7 +26,7 @@ RETAIN_RATE = 1e-3
 
 FROM_SCRATCH = False
 FORGET = True
-RETAIN = True
+RETAIN = False
 
 
 def main():
@@ -111,7 +111,7 @@ def main():
     retain_optimizer = optim.Adam(model.parameters(), lr=RETAIN_RATE)
     forget_criterion = KLDivLoss(reduction="batchmean")
 
-    if not FORGET or not RETAIN:
+    if not FORGET and not RETAIN:
         raise ValueError("At least one of FORGET or RETAIN must be True.")
 
     unlearn(
