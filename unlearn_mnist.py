@@ -16,6 +16,7 @@ from utils import evaluate, train
 DATA_DIR = "./data"
 MODEL_DIR = "./models"
 FIG_DIR = "./figures"
+LOG_DIR = "./logs"
 
 BATCH_SIZE = 64
 TRAIN_EPOCHS = 3
@@ -24,7 +25,9 @@ LEARNING_RATE = 1e-3
 UNLEARNING_RATE = 1e-3
 RETAIN_RATE = 1e-3
 
-FROM_SCRATCH = True
+FROM_SCRATCH = False
+FORGET = True
+RETAIN = True
 
 sns.set_theme()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -115,6 +118,9 @@ def main():
     retain_optimizer = optim.Adam(unlearned_model.parameters(), lr=RETAIN_RATE)
     forget_criterion = KLDivLoss(reduction="batchmean")
 
+    if not FORGET or not RETAIN:
+        raise ValueError("At least one of FORGET or RETAIN must be True.")
+
     unlearn(
         model=unlearned_model,
         retain_dataloader=retain_loader,
@@ -122,15 +128,24 @@ def main():
         val_dataloader=val_loader,
         retain_optimizer=retain_optimizer,
         forget_optimizer=forget_optimizer,
-        epochs=UNLEARN_EPOCHS,
+        unlearn_epochs=UNLEARN_EPOCHS,
         device=device,
+        log_dir=LOG_DIR,
         forget_criterion=forget_criterion,
-        forget_step=False,
-        retain_step=True,
+        forget_step=FORGET,
+        retain_step=RETAIN,
     )
 
     acc_unlearned = evaluate(unlearned_model, test_loader, 10, device)
-    print(f"Unlearned accuracy (with retain step): {acc_unlearned}")
+    base_msg = "Unlearned accuracy"
+    if FORGET and not RETAIN:
+        setting = "forget"
+    if RETAIN and not FORGET:
+        setting = "retain"
+    else:
+        setting = "forget and retain"
+
+    print(f"{base_msg} ({setting}): {acc_unlearned}")
     print(
         f"Change in accuracy (acc_unlearned - acc_trained): {acc_unlearned - acc_trained}"
     )
@@ -151,9 +166,9 @@ def main():
 
     f, ax = plt.subplots(figsize=(8, 5))
     sns.barplot(data=acc_df, x="class", y="value", hue="variable")
-    ax.set_title("Classwise accuracy on MNIST")
+    ax.set_title(f"MNIST accuracy ({setting})")
     f.tight_layout()
-    plt.savefig(f"{FIG_DIR}/unlearn_mnist_class_acc.png", dpi=300)
+    plt.savefig(f"{FIG_DIR}/unlearn_mnist_{setting}.png", dpi=300)
     plt.show()
 
 

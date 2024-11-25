@@ -1,3 +1,4 @@
+import json
 from torchmetrics.classification import MulticlassAccuracy
 from tqdm import tqdm
 
@@ -43,3 +44,8 @@ def evaluate(model, dataloader, n_classes, device):
         accuracy.update(outputs, labels)
 
     return accuracy.compute()
+
+
+def save_json(path, data):
+    with open(path, "w") as f:
+        json.dump(data, f)

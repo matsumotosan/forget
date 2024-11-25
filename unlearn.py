@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,6 +7,7 @@ from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from torchmetrics.classification import MulticlassAccuracy
 from tqdm import tqdm
+from utils import save_json
 
 
 def unlearn(
@@ -15,18 +17,40 @@ def unlearn(
     val_dataloader: DataLoader,
     retain_optimizer: Optimizer,
     forget_optimizer: Optimizer,
-    epochs: int,
+    unlearn_epochs: int,
     device,
+    log_dir: str,
     forget_step: bool = True,
     retain_step: bool = True,
     forget_criterion: nn.Module = nn.KLDivLoss(reduction="batchmean"),
     retain_criterion: nn.Module = nn.CrossEntropyLoss(),
     verbose: bool = True,
 ):
+    # Save initial trained model
+    ckpt_dir = f"{log_dir}/ckpt"
+    if not os.path.exists(ckpt_dir):
+        os.makedirs(ckpt_dir)
+    torch.save(model, f"{ckpt_dir}/epoch-0.pt")
+
     retain_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
     val_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
 
-    for epoch in range(epochs):
+    # Initialize parameters and metrics to save
+    params = {
+        "unlearn_epochs": unlearn_epochs,
+        "forget_step": forget_step,
+        "retain_step": retain_step,
+    }
+    save_json(f"{log_dir}/params.json", params)
+
+    metrics = {
+        "forget_loss": [],
+        "retain_loss": [],
+        "val_loss": [],
+        "val_acc": [],
+    }
+
+    for epoch in range(unlearn_epochs):
         print(f"Epoch {epoch+1}")
         model.train()
 
@@ -77,9 +101,23 @@ def unlearn(
             running_val_loss += val_loss.item()
             val_acc.update(outputs, labels)
 
+        # Update metrics
+        metrics["forget_loss"].append(running_forget_loss / len(forget_dataloader))
+        metrics["retain_loss"].append(running_retain_loss / len(retain_dataloader))
+        metrics["val_loss"].append(running_val_loss / len(val_dataloader))
+        metrics["val_acc"].append(val_acc.compute().tolist())
+
         if verbose:
             print(
-                f"forget_loss: {running_forget_loss/len(retain_dataloader)}, "
-                f"val_loss: {running_val_loss/len(val_dataloader)}, "
-                f"val_acc: {val_acc.compute()}"
+                f"forget_loss: {metrics['forget_loss'][-1]}, "
+                f"retain_loss: {metrics['retain_loss'][-1]}, "
+                f"val_loss: {metrics['val_loss'][-1]}, "
+                f"val_acc: {metrics['val_acc'][-1]}"
             )
+
+        # Save model
+        torch.save(model, f"{ckpt_dir}/epoch-{epoch+1}.pt")
+
+    # Save metrics
+    print(f"Saving metrics to {log_dir}.")
+    save_json(f"{log_dir}/metrics.json", metrics)

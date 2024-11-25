@@ -168,3 +168,4 @@ vgg_face_torch/
 *.gz
 lightning_logs/
 forget_downloads/
+logs/
