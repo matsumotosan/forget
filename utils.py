@@ -49,3 +49,9 @@ def evaluate(model, dataloader, n_classes, device):
 def save_json(path, data):
     with open(path, "w") as f:
         json.dump(data, f)
+
+
+def read_json(path):
+    with open(path, "r") as f:
+        data = json.load(f)
+    return data
