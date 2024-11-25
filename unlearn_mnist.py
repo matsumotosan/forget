@@ -106,7 +106,7 @@ def main():
     print(f"Retrained accuracy: {acc_retrained}")
 
     # Unlearning with KL divergence loss (with retain step)
-    print("\n=== Finetune with KLDiv loss (with retain step) ===")
+    print("\n=== Finetune with KLDiv loss ===")
     forget_optimizer = optim.Adam(model.parameters(), lr=UNLEARNING_RATE)
     retain_optimizer = optim.Adam(model.parameters(), lr=RETAIN_RATE)
     forget_criterion = KLDivLoss(reduction="batchmean")
