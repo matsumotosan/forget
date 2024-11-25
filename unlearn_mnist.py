@@ -162,27 +162,6 @@ def main():
         f"Change in accuracy (acc_unlearned - acc_trained): {acc_unlearned - acc_trained}"
     )
 
-    # Plot per-class accuracy
-    acc_df = pd.DataFrame(
-        {
-            "class": np.arange(10),
-            "acc_trained": acc_trained.cpu().detach().numpy(),
-            "acc_retrained": acc_retrained.cpu().detach().numpy(),
-            "acc_unlearned": acc_unlearned.cpu().detach().numpy(),
-        }
-    )
-
-    acc_df = acc_df.melt(
-        id_vars="class", value_vars=["acc_trained", "acc_retrained", "acc_unlearned"]
-    )
-
-    f, ax = plt.subplots(figsize=(8, 5))
-    sns.barplot(data=acc_df, x="class", y="value", hue="variable")
-    ax.set_title(f"MNIST accuracy ({setting})")
-    f.tight_layout()
-    plt.savefig(f"{FIG_DIR}/unlearn_mnist_{setting}.png", dpi=300)
-    plt.show()
-
 
 if __name__ == "__main__":
     main()
