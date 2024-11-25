@@ -18,16 +18,16 @@ MODEL_DIR = "./models"
 LOG_DIR = "./logs"
 
 FORGET_CLASS = ("airplane", "ship")
-BATCH_SIZE = 16
+BATCH_SIZE = 64
 TRAIN_EPOCHS = 3
-UNLEARN_EPOCHS = 3
+UNLEARN_EPOCHS = 20
 LEARNING_RATE = 1e-3
 UNLEARNING_RATE = 1e-3
 RETAIN_RATE = 1e-3
 
 FROM_SCRATCH = False
 FORGET = True
-RETAIN = True
+RETAIN = False
 
 
 def main():
@@ -81,8 +81,8 @@ def main():
 
     # Unlearning with KL divergence loss (with retain step)
     print("\n=== Finetune with KLDiv loss ===")
-    forget_optimizer = optim.Adam(model.parameters(), lr=UNLEARNING_RATE)
-    retain_optimizer = optim.Adam(model.parameters(), lr=RETAIN_RATE)
+    forget_optimizer = optim.SGD(model.parameters(), lr=UNLEARNING_RATE)
+    retain_optimizer = optim.SGD(model.parameters(), lr=RETAIN_RATE)
     forget_criterion = KLDivLoss(reduction="batchmean")
 
     if not FORGET and not RETAIN:
