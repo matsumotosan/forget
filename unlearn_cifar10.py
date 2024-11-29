@@ -8,7 +8,7 @@ from torch.nn.modules import KLDivLoss
 from torchvision.datasets.cifar import CIFAR10
 from unlearn import unlearn
 from unlearning_datamodule import CIFAR10UnlearningDataModule
-from utils import evaluate, train, setup_log_dir, save_json
+from utils import evaluate, setup_log_dir, save_json
 from models import load_resnet18
 
 DATASET = "cifar10"
