@@ -55,8 +55,8 @@ def main(args):
     plt.hist(test_loss_unlearned, density=True, alpha=0.5, bins=50, label="test (unlearned)")
 
     plt.title(f"Forget and test loss histogram")
-    plt.xlabel("Frequency")
-    plt.ylabel("Loss")
+    plt.xlabel("Loss")
+    plt.ylabel("Frequency")
     plt.legend()
 
     plt.savefig(f"{args.fig_dir}/mia_{params['dataset']}.png")

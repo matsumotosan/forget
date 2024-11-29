@@ -21,7 +21,7 @@ cifar10_idx2class = {
     9: "truck",
 }
 
-cifar_class2idx = {v: k for k, v in cifar10_idx2class.items()}
+cifar10_class2idx = {v: k for k, v in cifar10_idx2class.items()}
 
 def train(
     model, dataloader, criterion, optimizer, epochs, device, verbose: bool = True
