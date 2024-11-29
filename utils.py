@@ -1,3 +1,4 @@
+import numpy as np
 import torch.nn as nn
 import json
 import os
@@ -7,7 +8,7 @@ from torchmetrics.classification import MulticlassAccuracy
 from tqdm import tqdm
 
 
-cifar_idx2class = {
+cifar10_idx2class = {
     0: "airplane",
     1: "automobile",
     2: "bird",
@@ -20,6 +21,7 @@ cifar_idx2class = {
     9: "truck",
 }
 
+cifar_class2idx = {v: k for k, v in cifar10_idx2class.items()}
 
 def train(
     model, dataloader, criterion, optimizer, epochs, device, verbose: bool = True
@@ -69,6 +71,22 @@ def evaluate(model, dataloader, n_classes, device, forget: bool = False):
     
     loss /= len(dataloader)
     return accuracy.compute().tolist(), loss
+
+
+def per_sample_loss(model, dataloader, device):
+    criterion = nn.CrossEntropyLoss(reduction="none")
+    losses = np.array([])
+
+    model.eval()
+    for images, labels in dataloader:
+        images = images.to(device)
+        labels = labels.to(device)
+
+        outputs = model(images)
+        loss = criterion(outputs, labels).detach().cpu().numpy()
+        losses = np.concatenate((losses, loss))
+    
+    return losses
 
 
 def save_json(path, data):
