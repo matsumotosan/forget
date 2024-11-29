@@ -7,6 +7,19 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from utils import read_json
 
+cifar_idx2class = {
+    0: "airplane",
+    1: "automobile",
+    2: "bird",
+    3: "cat",
+    4: "deer",
+    5: "dog",
+    6: "frog",
+    7: "horse",
+    8: "ship",
+    9: "truck",
+}
+
 
 def main(args):
     os.makedirs(args.fig_dir, exist_ok=True)
@@ -17,10 +30,13 @@ def main(args):
     params = read_json(f"{args.exp_dir}/params.json")
     metrics = read_json(f"{args.exp_dir}/metrics.json")
 
+    if params["dataset"] == "cifar10":
+        idx2class = cifar_idx2class
+
     data = []
     for epoch_idx, accuracies in enumerate(metrics["val_acc"]):
         for class_idx, accuracy in enumerate(accuracies):
-            data.append({'Unlearning Epoch': epoch_idx, 'Class': f'{class_idx}', 'Accuracy': accuracy})
+            data.append({'Unlearning Epoch': epoch_idx, 'Class': f'{idx2class[class_idx]}', 'Accuracy': accuracy})
 
     df = pd.DataFrame(data)
     if params["forget_step"] and not params["retain_step"]:
@@ -33,9 +49,12 @@ def main(args):
         raise ValueError("Cannot have neither.")
 
     f, ax = plt.subplots(1, 1, figsize=(12, 8))
+    ax.axhline(0.1, color="grey", ls="--")
     sns.lineplot(data=df, x='Unlearning Epoch', y='Accuracy', hue='Class', marker='o', ax=ax)
+
     ax.set_title(f"{params['dataset'].upper()} Per-Class Validation Accuracy\n({setting} {params['forget_class']})")
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_ylim([-0.001, 1.05])
     ax.set_ylabel("Accuracy")
     ax.grid()
 
