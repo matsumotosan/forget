@@ -1,24 +1,10 @@
-import numpy as np
 import os
 from argparse import ArgumentParser
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
-from utils import read_json
-
-cifar_idx2class = {
-    0: "airplane",
-    1: "automobile",
-    2: "bird",
-    3: "cat",
-    4: "deer",
-    5: "dog",
-    6: "frog",
-    7: "horse",
-    8: "ship",
-    9: "truck",
-}
+from utils import read_json, cifar_idx2class
 
 
 def main(args):
@@ -36,7 +22,13 @@ def main(args):
     data = []
     for epoch_idx, accuracies in enumerate(metrics["val_acc"]):
         for class_idx, accuracy in enumerate(accuracies):
-            data.append({'Unlearning Epoch': epoch_idx, 'Class': f'{idx2class[class_idx]}', 'Accuracy': accuracy})
+            data.append(
+                {
+                    "Unlearning Epoch": epoch_idx,
+                    "Class": f"{idx2class[class_idx]}",
+                    "Accuracy": accuracy,
+                }
+            )
 
     df = pd.DataFrame(data)
     if params["forget_step"] and not params["retain_step"]:
@@ -50,9 +42,13 @@ def main(args):
 
     f, ax = plt.subplots(1, 1, figsize=(12, 8))
     ax.axhline(0.1, color="grey", ls="--")
-    sns.lineplot(data=df, x='Unlearning Epoch', y='Accuracy', hue='Class', marker='o', ax=ax)
+    sns.lineplot(
+        data=df, x="Unlearning Epoch", y="Accuracy", hue="Class", marker="o", ax=ax
+    )
 
-    ax.set_title(f"{params['dataset'].upper()} Per-Class Validation Accuracy\n({setting} {params['forget_class']})")
+    ax.set_title(
+        f"{params['dataset'].upper()} Per-Class Validation Accuracy\n({setting} {params['forget_class']})"
+    )
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_ylim([-0.001, 1.05])
     ax.set_ylabel("Accuracy")
@@ -76,6 +72,8 @@ def main(args):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--exp_dir", type=str, help="Experiment directory")
-    parser.add_argument("--fig_dir", type=str, help="Figure directory", default="./figs")
+    parser.add_argument(
+        "--fig_dir", type=str, help="Figure directory", default="./figs"
+    )
     args = parser.parse_args()
     main(args)
