@@ -105,7 +105,7 @@ class CIFAR10UnlearningDataModule(UnlearningDataModule):
         self,
         data_dir: str,
         forget_class: list[int],
-        batch_size: int = 32,
+        batch_size: int = 64,
         transform=None,
     ) -> None:
         if transform is None:
@@ -138,4 +138,4 @@ class CIFAR10UnlearningDataModule(UnlearningDataModule):
         self.ds_forget = Subset(self.ds_train, self.forget_idx)
         self.ds_retain = Subset(self.ds_train, self.retain_idx)
 
-        self.ds_val, self.ds_test = random_split(self.ds_train, [0.5, 0.5])
+        self.ds_val, self.ds_test = random_split(self.ds_test, [0.5, 0.5])
