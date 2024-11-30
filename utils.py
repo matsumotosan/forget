@@ -21,7 +21,19 @@ cifar10_idx2class = {
     9: "truck",
 }
 
+mufac_idx2class = {
+    0: "0-6 years old",
+    1: "7-12 years old",
+    2: "13-19 years old",
+    3: "20-30 years old",
+    4: "31-45 years old",
+    5: "46-55 years old",
+    6: "56-66 years old",
+    7: "67-80 years old"
+}
+
 cifar10_class2idx = {v: k for k, v in cifar10_idx2class.items()}
+mufac_class2idx = {v: k for k, v in mufac_idx2class.items()}
 
 def train(
     model, dataloader, criterion, optimizer, epochs, device, verbose: bool = True

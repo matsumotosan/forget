@@ -15,6 +15,10 @@ cifar10_transform = transforms.Compose(
     ]
 )
 
+mufac_transform = transforms.Compose(
+    [transforms.ToTensor()]
+)
+
 
 class UnlearningDataModule:
     """DataModule class for unlearning setting."""
