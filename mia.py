@@ -76,14 +76,26 @@ def main(args):
     # test_loss_unlearned = per_sample_loss(unlearned_model, test_loader, device)
     test_loss_unlearned = per_sample_loss(unlearned_model, test_forget_loader, device)
 
-    score = run_mia(forget_loss_unlearned, test_loss_unlearned, N_SPLITS, SEED)
-    print(f"MIA accuracy: {score.mean()}")
+    mia_score_trained = run_mia(forget_loss_trained, test_loss_trained, N_SPLITS, SEED)
+    mia_score_unlearned = run_mia(forget_loss_unlearned, test_loss_unlearned, N_SPLITS, SEED)
+
+    print(f"MIA accuracy (trained): {mia_score_trained.mean()}")
+    print(f"MIA accuracy (unlearned): {mia_score_unlearned.mean()}")
+
+    plot_loss_hist(
+        forget_loss_trained,
+        retain_loss_trained,
+        test_loss_trained,
+        title=f"Trained Model Sample Losses\n(MIA accuracy: {mia_score_trained.mean():.4f})",
+        filename=f"{args.fig_dir}/mia_{params['dataset']}_trained.png",
+        bins=20,
+    )
 
     plot_loss_hist(
         forget_loss_unlearned,
         retain_loss_unlearned,
         test_loss_unlearned,
-        title=f"Unlearned Model Sample Losses\n(MIA accuracy: {score.mean():.4f})",
+        title=f"Unlearned Model Sample Losses\n(MIA accuracy: {mia_score_unlearned.mean():.4f})",
         filename=f"{args.fig_dir}/mia_{params['dataset']}_unlearned.png",
         bins=N_BINS,
     )
@@ -121,7 +133,7 @@ def run_mia(in_train_loss, out_train_loss, n_splits, seed):
     return score
 
 
-def plot_loss_hist(forget_loss, retain_loss, test_loss, title, filename, bins, histtype="bar"):
+def plot_loss_hist(forget_loss, retain_loss, test_loss, title, filename, bins=None, histtype="bar"):
     f, ax = plt.subplots(1, 1, figsize=(12, 8))
 
     plt.hist(forget_loss, density=True, alpha=0.5, bins=bins, label="forget set", histtype=histtype)
