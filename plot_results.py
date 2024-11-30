@@ -4,7 +4,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
-from utils import read_json, cifar10_idx2class
+from utils import read_json, cifar10_idx2class, mufac_idx2class
 
 
 def main(args):
@@ -18,6 +18,8 @@ def main(args):
 
     if params["dataset"] == "cifar10":
         idx2class = cifar10_idx2class
+    elif params["dataset"] == "mufac":
+        idx2class = mufac_idx2class
 
     data = []
     for epoch_idx, accuracies in enumerate(metrics["val_acc"]):

@@ -56,23 +56,22 @@ class MUFAC(VisionDataset):
         self.stage = stage
         self.transform = transform
 
-        self.data, self.targets = self.parse_meta_data(stage)
+        self.data, self.targets = self.parse_meta_data()
 
-    def parse_meta_data(self, stage):
+    def parse_meta_data(self):
         meta = pd.read_csv(os.path.join(self.root, self.base_dir, self.meta_paths[self.stage]))
         data = meta["image_path"].tolist()
-        targets = meta["age_class"].tolist()
+        targets = [self.alpha2idx[c] for c in meta["age_class"].tolist()]
         return data, targets
 
     def __getitem__(self, idx):
-        image_path, age_class = self.data[idx], self.targets[idx]
+        image_path, target = self.data[idx], self.targets[idx]
         img = Image.open(os.path.join(self.root, self.base_dir, self.img_dir[self.stage], image_path))
-        label = self.alpha2idx[age_class]
 
         if self.transform:
             img = self.transform(img)
 
-        return img, label
+        return img, target
 
     def __len__(self):
-        return len(self.image_age_list)
+        return len(self.targets)

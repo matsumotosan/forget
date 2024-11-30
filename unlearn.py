@@ -23,6 +23,7 @@ def print_metrics(metrics, epoch=-1) -> None:
 
 def unlearn(
     model: nn.Module,
+    num_classes: int,
     retain_dataloader: DataLoader,
     forget_dataloader: DataLoader,
     val_dataloader: DataLoader,
@@ -53,9 +54,9 @@ def unlearn(
     }
 
     # Save initial metrics
-    forget_acc_initial, forget_loss_initial = evaluate(model, forget_dataloader, 10, device, forget=True)
-    retain_acc_initial, retain_loss_initial = evaluate(model, retain_dataloader, 10, device)
-    val_acc_initial, val_loss_initial = evaluate(model, val_dataloader, 10, device)
+    forget_acc_initial, forget_loss_initial = evaluate(model, forget_dataloader, num_classes, device, forget=True)
+    retain_acc_initial, retain_loss_initial = evaluate(model, retain_dataloader, num_classes, device)
+    val_acc_initial, val_loss_initial = evaluate(model, val_dataloader, num_classes, device)
 
     metrics["forget_loss"].append(forget_loss_initial)
     metrics["retain_loss"].append(retain_loss_initial)
@@ -69,9 +70,9 @@ def unlearn(
         print("Metrics before unlearning - ")
         print_metrics(metrics)
 
-    forget_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
-    retain_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
-    val_acc = MulticlassAccuracy(num_classes=10, average=None).to(device)
+    forget_acc = MulticlassAccuracy(num_classes=num_classes, average=None).to(device)
+    retain_acc = MulticlassAccuracy(num_classes=num_classes, average=None).to(device)
+    val_acc = MulticlassAccuracy(num_classes=num_classes, average=None).to(device)
 
     for epoch in range(unlearn_epochs):
         print(f"Epoch {epoch+1}")

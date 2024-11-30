@@ -4,6 +4,8 @@ from torch.utils.data import DataLoader, Subset, random_split
 from torchvision import transforms
 from torchvision.datasets import MNIST, CIFAR10
 
+from mufac_dataset import MUFAC
+
 mnist_transform = transforms.Compose(
     [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
 )
@@ -130,6 +132,44 @@ class CIFAR10UnlearningDataModule(UnlearningDataModule):
         self.ds_test = CIFAR10(
             root=self.data_dir, train=False, download=True, transform=self.transform
         )
+
+        # Split training dataset into retain and forget subsets
+        forget_mask = torch.isin(
+            torch.tensor(self.ds_train.targets), torch.tensor(self.forget_class)
+        )
+
+        self.forget_idx = forget_mask.nonzero().flatten().tolist()
+        self.retain_idx = (~forget_mask).nonzero().flatten().tolist()
+
+        self.ds_forget = Subset(self.ds_train, self.forget_idx)
+        self.ds_retain = Subset(self.ds_train, self.retain_idx)
+
+        self.ds_val, self.ds_test = random_split(self.ds_test, [0.5, 0.5])
+
+
+class MUFACUnlearningDataModule(UnlearningDataModule):
+    """MUFAC DataModule class for unlearning setting."""
+
+    def __init__(
+        self,
+        data_dir: str,
+        forget_class: list[int],
+        batch_size: int = 64,
+        transform=None,
+    ) -> None:
+        if transform is None:
+            transform = mufac_transform
+
+        super().__init__(data_dir, forget_class, batch_size, transform)
+
+    def prepare_data(self) -> None:
+        MUFAC(self.data_dir)
+
+    def setup(self) -> None:
+        self.prepare_data()
+        self.ds_train = MUFAC(root=self.data_dir, stage="train", transform=self.transform)
+        self.ds_val = MUFAC(root=self.data_dir, stage="val", transform=self.transform)
+        self.ds_test = MUFAC(root=self.data_dir, stage="test", transform=self.transform)
 
         # Split training dataset into retain and forget subsets
         forget_mask = torch.isin(
