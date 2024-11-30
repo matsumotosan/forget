@@ -101,7 +101,7 @@ def main(args):
         attacker, losses, labels, cv=cv, scoring="accuracy"
     )
 
-    print(score.mean())
+    print(f"MIA accuracy: {score.mean()}")
 
 
 if __name__ == "__main__":
