@@ -76,25 +76,38 @@ def main(args):
     # test_loss_unlearned = per_sample_loss(unlearned_model, test_loader, device)
     test_loss_unlearned = per_sample_loss(unlearned_model, test_forget_loader, device)
 
+    score = run_mia(forget_loss_unlearned, test_loss_unlearned, N_SPLITS, SEED)
+    print(f"MIA accuracy: {score.mean()}")
+
+    plot_loss_hist(
+        forget_loss_unlearned,
+        retain_loss_unlearned,
+        test_loss_unlearned,
+        title=f"Unlearned Model Sample Losses\n(MIA accuracy: {score.mean():.4f})",
+        filename=f"{args.fig_dir}/mia_{params['dataset']}_unlearned.png",
+        bins=N_BINS,
+    )
+
+
+def run_mia(in_train_loss, out_train_loss, n_splits, seed):
     # Define adversarial model
     attacker = linear_model.LogisticRegression()
     cv = model_selection.StratifiedShuffleSplit(
-        n_splits=N_SPLITS, random_state=SEED,
+        n_splits=n_splits, random_state=seed,
     )
     
-    # Test attacker on unlearned losses (forget and test)
-    n_test = len(test_loss_unlearned)
-    n_forget = len(forget_loss_unlearned)
+    n_in_train = len(in_train_loss)
+    n_out_train = len(out_train_loss)
 
-    if n_test < n_forget:
-        np.random.shuffle(forget_loss_unlearned)
-        forget_loss_unlearned = forget_loss_unlearned[:n_test]
+    if n_out_train < n_in_train:
+        np.random.shuffle(in_train_loss)
+        in_train_loss = in_train_loss[:n_out_train]
     else:
-        np.random.shuffle(test_loss_unlearned)
-        test_loss_unlearned = test_loss_unlearned[:n_forget]
+        np.random.shuffle(out_train_loss)
+        out_train_loss = out_train_loss[:n_in_train]
 
-    losses = np.concatenate((forget_loss_unlearned, test_loss_unlearned))
-    labels = np.concatenate((np.ones_like(forget_loss_unlearned), np.zeros_like(test_loss_unlearned)))
+    losses = np.concatenate((in_train_loss, out_train_loss))
+    labels = np.concatenate((np.ones_like(in_train_loss), np.zeros_like(out_train_loss)))
 
     shuffle_idx = np.arange(len(losses))
     np.random.shuffle(shuffle_idx)
@@ -105,16 +118,7 @@ def main(args):
         attacker, losses, labels, cv=cv, scoring="accuracy"
     )
 
-    print(f"MIA accuracy: {score.mean()}")
-
-    plot_loss_hist(
-        forget_loss_unlearned,
-        retain_loss_unlearned,
-        test_loss_unlearned,
-        title=f"Unlearned Model Sample Losses\n(MIA accuracy: {score.mean():.4f})",
-        filename=f"{args.fig_dir}/mia_{params['dataset']}.png",
-        bins=N_BINS,
-    )
+    return score
 
 
 def plot_loss_hist(forget_loss, retain_loss, test_loss, title, filename, bins, histtype="bar"):
@@ -122,7 +126,7 @@ def plot_loss_hist(forget_loss, retain_loss, test_loss, title, filename, bins, h
 
     plt.hist(forget_loss, density=True, alpha=0.5, bins=bins, label="forget set", histtype=histtype)
     plt.hist(retain_loss, density=True, alpha=0.5, bins=bins, label="retain set", histtype=histtype)
-    plt.hist(test_loss, density=True, alpha=1.5, bins=bins, label="test set (forget)", histtype=histtype)
+    plt.hist(test_loss, density=True, alpha=0.5, bins=bins, label="test set (forget)", histtype=histtype)
 
     plt.title(title)
     plt.xlabel("Cross Entropy Loss")
