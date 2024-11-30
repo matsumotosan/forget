@@ -61,14 +61,14 @@ def main(args):
     trained_model_path = f"{args.exp_dir}/ckpt/epoch-0.pt"
     unlearned_model_path = f"{args.exp_dir}/ckpt/epoch-20.pt"
 
-    # trained_model = load_resnet18(trained_model_path, device).to(device)
-    # unlearned_model = load_resnet18(unlearned_model_path, device).to(device)
     trained_model = torch.load(trained_model_path).to(device)
     unlearned_model = torch.load(unlearned_model_path).to(device)
 
     # Compute losses (trained)
     forget_loss_trained = per_sample_loss(trained_model, forget_loader, device)
-    test_loss_trained = per_sample_loss(trained_model, test_loader, device)
+    retain_loss_trained = per_sample_loss(trained_model, retain_loader, device)
+    # test_loss_trained = per_sample_loss(trained_model, test_loader, device)
+    test_loss_trained = per_sample_loss(trained_model, test_forget_loader, device)
 
     # Compute losses (unlearned)
     forget_loss_unlearned  = per_sample_loss(unlearned_model, forget_loader, device)
@@ -107,17 +107,28 @@ def main(args):
 
     print(f"MIA accuracy: {score.mean()}")
 
-    f, ax = plt.subplots(1, 1, figsize=(12, 8))
-    histtype = "bar"
-    plt.hist(forget_loss_unlearned, density=True, alpha=0.5, bins=N_BINS, label="forget set", histtype=histtype)
-    plt.hist(retain_loss_unlearned, density=True, alpha=0.5, bins=N_BINS, label="retain set", histtype=histtype)
-    plt.hist(test_loss_unlearned, density=True, alpha=0.5, bins=N_BINS, label="test set (forget)", histtype=histtype)
+    plot_loss_hist(
+        forget_loss_unlearned,
+        retain_loss_unlearned,
+        test_loss_unlearned,
+        title=f"Unlearned Model Sample Losses\n(MIA accuracy: {score.mean():.4f})",
+        filename=f"{args.fig_dir}/mia_{params['dataset']}.png",
+        bins=N_BINS,
+    )
 
-    plt.title(f"Unlearned Model Sample Losses\n(MIA accuracy: {score.mean():.4f})")
+
+def plot_loss_hist(forget_loss, retain_loss, test_loss, title, filename, bins, histtype="bar"):
+    f, ax = plt.subplots(1, 1, figsize=(12, 8))
+
+    plt.hist(forget_loss, density=True, alpha=0.5, bins=bins, label="forget set", histtype=histtype)
+    plt.hist(retain_loss, density=True, alpha=0.5, bins=bins, label="retain set", histtype=histtype)
+    plt.hist(test_loss, density=True, alpha=1.5, bins=bins, label="test set (forget)", histtype=histtype)
+
+    plt.title(title)
     plt.xlabel("Cross Entropy Loss")
     plt.ylabel("Density")
     plt.legend()
-    plt.savefig(f"{args.fig_dir}/mia_{params['dataset']}.png")
+    plt.savefig(filename)
     
 
 if __name__ == "__main__":
