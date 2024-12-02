@@ -98,7 +98,11 @@ st.bar_chart(
 
 # Show results (static)
 st.header("Unlearning process")
-st.write("The unlearning process was evaluated during each epoch.")
+st.write(
+    "The performance of the model on the validation set was logged each unlearning epoch."
+    "The graph clearly demonstratres that the model is forgetting the `airplane` and `ship` classes, "
+    "whilst maintaining high accuracy on the remaining classes."
+ )
 
 params = read_json(f"{UNLEARNED_FORGET_RETAIN_DIR}/params.json")
 metrics = read_json(f"{UNLEARNED_FORGET_RETAIN_DIR}/metrics.json")
@@ -128,4 +132,9 @@ st.line_chart(df, x="Unlearning Epoch", y="Accuracy", color="Class")
 
 # MIA
 st.header("Membership Inference Attack")
-st.write("We will use membership inference attacks to evaluate the extent to which the model unlearned a class.")
+st.write(
+    "Although we have some evidence that the model is successfully unlearning, it is unclear if the model "
+    "has actually unlearned classes or if it is concealing its knowledge. ML has demonstrated in numerous "
+    "cases that it is capable of exploiting features in the data to learn shortcuts instead of the intended solution."
+    "We will use membership inference attacks to evaluate the extent to which the model unlearned a class."
+)
