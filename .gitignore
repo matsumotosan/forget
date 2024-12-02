@@ -170,3 +170,4 @@ vgg_face_torch/
 lightning_logs/
 forget_downloads/
 logs/
+figs/
