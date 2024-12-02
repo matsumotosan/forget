@@ -1,4 +1,5 @@
 import random
+import pandas as pd
 import numpy as np
 import torch
 from PIL import Image
@@ -8,6 +9,7 @@ from streamlit_image_select import image_select
 from torchvision.datasets import CIFAR10
 from unlearning_datamodule import cifar10_transform
 from models import load_resnet18
+from utils import cifar10_class2idx
 
 DATA_DIR = "app_data"
 MODEL_DIR = "models"
@@ -19,8 +21,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 @st.cache_resource
-def load_classifier(model_path):
-    return load_resnet18(model_path, device).to(device)
+def load_model(model_path):
+    return load_resnet18(model_path, device)
 
 
 @st.cache_resource
@@ -61,14 +63,16 @@ img = image_select(
 
 st.image(img)
 
-model = load_resnet18(TRAINED_MODEL_PATH, device)
+model = load_model(TRAINED_MODEL_PATH).eval()
 x = cifar10_transform(img).unsqueeze(0).to(device)
 test_pred = model(x)
 test_probs = test_pred.softmax(dim=1).squeeze().cpu().detach().numpy()
 
+df = pd.DataFrame({"Value": test_probs}, index=cifar10_class2idx.keys())
+
 st.bar_chart(
-    data=test_probs,
+    data=df,
     x_label="Probability",
-    y_label="Digit",
+    y_label="Class",
     horizontal=True,
 )
