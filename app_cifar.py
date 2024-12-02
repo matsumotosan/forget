@@ -6,12 +6,13 @@ from streamlit_image_select import image_select
 from torchvision.datasets import CIFAR10
 from unlearning_datamodule import cifar10_transform
 from models import load_resnet18
-from utils import cifar10_class2idx
+from utils import cifar10_idx2class, cifar10_class2idx, read_json
 
 APP_DIR = "app_data"
 
 TRAINED_MODEL_PATH = f"{APP_DIR}/weights_resnet18_cifar10.pt"
-UNLEARNED_MODEL_PATH = f"{APP_DIR}/2024-11-28-20-30-08_epoch-20.pt"
+UNLEARNED_FORGET_RETAIN_DIR = f"{APP_DIR}/2024-11-28-20-30-08"
+UNLEARNED_FORGET_DIR = f"{APP_DIR}/2024-11-28-20-30-08"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -80,6 +81,7 @@ st.bar_chart(
 st.header("Unlearned model output")
 st.write("Model has been tuned to forget `airplane` and `ship`.")
 
+UNLEARNED_MODEL_PATH = f"{UNLEARNED_FORGET_RETAIN_DIR}/ckpt/epoch-20.pt"
 unlearned_model = torch.load(UNLEARNED_MODEL_PATH, map_location=device).eval()
 unlearned_pred = unlearned_model(x)
 unlearned_probs = unlearned_pred.softmax(dim=1).squeeze().cpu().detach().numpy()
@@ -96,6 +98,32 @@ st.bar_chart(
 # Show results (static)
 st.header("Unlearning process")
 st.write("The unlearning process was evaluated during each epoch.")
+
+params = read_json(f"{UNLEARNED_FORGET_RETAIN_DIR}/params.json")
+metrics = read_json(f"{UNLEARNED_FORGET_RETAIN_DIR}/metrics.json")
+
+data = []
+for epoch_idx, accuracies in enumerate(metrics["val_acc"]):
+    for class_idx, accuracy in enumerate(accuracies):
+        data.append(
+            {
+                "Unlearning Epoch": epoch_idx,
+                "Class": f"{cifar10_idx2class[class_idx]}",
+                "Accuracy": accuracy,
+            }
+        )
+
+df = pd.DataFrame(data)
+if params["forget_step"] and not params["retain_step"]:
+    setting = "forget"
+elif params["retain_step"] and not params["forget_step"]:
+    setting = "retain"
+elif params["retain_step"] and params["forget_step"]:
+    setting = "forget+retain"
+else:
+    raise ValueError("Cannot have neither.")
+
+st.line_chart(df, x="Unlearning Epoch", y="Accuracy", color="Class")
 
 # MIA
 st.header("Membership Inference Attack")
