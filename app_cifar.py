@@ -44,6 +44,18 @@ st.write(
 
 
 st.header("Test on CIFAR-10 test set")
+st.write(
+    "Model has been tuned to forget `airplane` and `ship`. Select various images to see how the model's output changes"
+    "based on the class. You should see that both the trained and unlearned models output similar probability distributions"
+    "for classes not in the forget set. For classes in the forget set (`airplane` and `ship`), the model's output shifts "
+    "noticeably. In this case, the predicted probability distribution is more evenly distributed among the classes indicating "
+    "that the model is not confident in its predictions."
+)
+
+trained_model = load_model(TRAINED_MODEL_PATH).eval()
+UNLEARNED_MODEL_PATH = f"{UNLEARNED_FORGET_RETAIN_DIR}/ckpt/epoch-20.pt"
+unlearned_model = torch.load(UNLEARNED_MODEL_PATH, map_location=device).eval()
+
 with st.spinner("Downloading dataset"):
     dataset = load_dataset()
 
@@ -56,43 +68,32 @@ if st.button("Get new choices"):
 img = image_select(
     "Select an image to classify",
     [dataset[i][0] for i in st.session_state.rand_idx],
-    use_container_width=False,
+    use_container_width=True,
 )
 
-st.image(img, caption="Class", width=400)
-
-# Trained model
-trained_model = load_model(TRAINED_MODEL_PATH).eval()
 x = cifar10_transform(img).unsqueeze(0).to(device)
 trained_pred = trained_model(x)
 trained_probs = trained_pred.softmax(dim=1).squeeze().cpu().detach().numpy()
 
-df = pd.DataFrame({"Value": trained_probs}, index=cifar10_class2idx.keys())
-
-st.header("Trained model output")
-st.bar_chart(
-    data=df,
-    x_label="Probability",
-    y_label="Class",
-    horizontal=True,
-)
-
-# Unlearned model
-st.header("Unlearned model output")
-st.write("Model has been tuned to forget `airplane` and `ship`.")
-
-UNLEARNED_MODEL_PATH = f"{UNLEARNED_FORGET_RETAIN_DIR}/ckpt/epoch-20.pt"
-unlearned_model = torch.load(UNLEARNED_MODEL_PATH, map_location=device).eval()
 unlearned_pred = unlearned_model(x)
 unlearned_probs = unlearned_pred.softmax(dim=1).squeeze().cpu().detach().numpy()
 
-df = pd.DataFrame({"Value": unlearned_probs}, index=cifar10_class2idx.keys())
+df = pd.DataFrame(
+    {
+        "class": cifar10_class2idx.keys(),
+        "trained": trained_probs,
+        "unlearned": unlearned_probs,
+    }
+)
 
 st.bar_chart(
     data=df,
-    x_label="Probability",
-    y_label="Class",
-    horizontal=True,
+    x="class",
+    y=["trained", "unlearned"],
+    x_label="Class",
+    y_label="Probability",
+    horizontal=False,
+    stack=False,
 )
 
 # Show results (static)
