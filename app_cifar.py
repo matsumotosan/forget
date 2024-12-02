@@ -30,15 +30,15 @@ st.title("CIFAR-10 Image Classification")
 st.header("Why CIFAR-10?")
 st.write(
     "Given the time constraints of our project, we thought it would be wise to test unlearning methods "
-    "on a simple dataset like CIFAR-10 before moving on to larger datasets requiring larger models. We "
+    "on a simple dataset like CIFAR-10 before moving on to an unfamiliar dataset. We "
     'realize that CIFAR-10 is a "solved problem", however, we intend for the focus of our project to be '
     "on the machine unlearning aspect and believe CIFAR-10 will be a suitable first dataset for that."
 )
 
 st.write(
     "With machine unlearning, we hope to train the CIFAR-10 classifier to unlearn or forget specific digits."
-    "As mentioned above, the model may learn to give the illusion of unlearning a specific digit. One way we "
-    "intend on testing this hypothesis is by evaluating the model's representation of images before the final layer."
+    "As mentioned above, the model may learn to give the illusion of unlearning a specific class. One way we "
+    "evaluated the extent to which a model unlearned a class was by performing a membership inference attack."
 )
 
 
@@ -94,3 +94,9 @@ st.bar_chart(
 )
 
 # Show results (static)
+st.header("Unlearning process")
+st.write("The unlearning process was evaluated during each epoch.")
+
+# MIA
+st.header("Membership Inference Attack")
+st.write("We will use membership inference attacks to evaluate the extent to which the model unlearned a class.")
