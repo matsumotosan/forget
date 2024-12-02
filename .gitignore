@@ -162,6 +162,7 @@ cython_debug/
 #.idea/
 
 data/
+app_data/
 forget_data/
 models/
 vgg_face_torch/
