@@ -107,4 +107,13 @@ st.write(
     "classes to be forgotten."
 )
 
+st.write(
+    "Plotted below are the per-sample losses of the unlearned MUFAC classifier on the forget set, retain set, "
+    "and samples that correspond to the forget classes in the test set. Note that the density curves for "
+    "the forget set and test set (forget) are very similar indicating that the attacker (binary classifier) is "
+    "unable to distinguish between samples from the training and test set when they correspond to the unlearned class."
+    "The density curve on the retain set indicates that the distribution of the unlearned model's losses on classes "
+    "that were retained is significantly different (lower) than on the class that was unlearned."
+)
+
 st.image("figs/mia_cifar10_unlearned.png")
