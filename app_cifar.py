@@ -73,11 +73,11 @@ img = image_select(
 )
 
 x = cifar10_transform(img).unsqueeze(0).to(device)
-trained_pred = trained_model(x)
-trained_probs = trained_pred.softmax(dim=1).squeeze().cpu().detach().numpy()
+trained_logits = trained_model(x)
+trained_probs = trained_logits.softmax(dim=1).squeeze().cpu().detach().numpy()
 
-unlearned_pred = unlearned_model(x)
-unlearned_probs = unlearned_pred.softmax(dim=1).squeeze().cpu().detach().numpy()
+unlearned_logits = unlearned_model(x)
+unlearned_probs = unlearned_logits.softmax(dim=1).squeeze().cpu().detach().numpy()
 
 df = pd.DataFrame(
     {
