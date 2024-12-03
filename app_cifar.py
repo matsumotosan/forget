@@ -14,6 +14,8 @@ TRAINED_MODEL_PATH = f"{APP_DIR}/weights_resnet18_cifar10.pt"
 UNLEARNED_FORGET_RETAIN_DIR = f"{APP_DIR}/2024-11-28-20-30-08"
 UNLEARNED_FORGET_DIR = f"{APP_DIR}/2024-11-28-20-30-08"
 
+N_CHOICES = 12
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -45,7 +47,7 @@ st.write(
 
 st.header("Test on CIFAR-10 test set")
 st.write(
-    "Model has been tuned to forget `airplane` and `ship`. Select various images to see how the model's output changes"
+    "The model has been tuned to forget `airplane` and `ship`. Select various images to see how the model's output changes"
     "based on the class. You should see that both the trained and unlearned models output similar probability distributions"
     "for classes not in the forget set. For classes in the forget set (`airplane` and `ship`), the model's output shifts "
     "noticeably. In this case, the predicted probability distribution is more evenly distributed among the classes indicating "
@@ -59,11 +61,10 @@ unlearned_model = torch.load(UNLEARNED_MODEL_PATH, map_location=device).eval()
 with st.spinner("Downloading dataset"):
     dataset = load_dataset()
 
-n_choices = 12
 if "rand_idx" not in st.session_state:
-    st.session_state.rand_idx = random.sample(range(len(dataset)), n_choices)
+    st.session_state.rand_idx = random.sample(range(len(dataset)), N_CHOICES)
 if st.button("Get new choices"):
-    st.session_state.rand_idx = random.sample(range(len(dataset)), n_choices)
+    st.session_state.rand_idx = random.sample(range(len(dataset)), N_CHOICES)
 
 img = image_select(
     "Select an image to classify",
@@ -99,10 +100,10 @@ st.bar_chart(
 # Show results (static)
 st.header("Unlearning process")
 st.write(
-    "The performance of the model on the validation set was logged each unlearning epoch."
-    "The graph clearly demonstratres that the model is forgetting the `airplane` and `ship` classes, "
+    "The performance of the model on the validation set was logged each unlearning epoch. "
+    "The loss over the course of unlearning demonstrates that the model is forgetting the `airplane` and `ship` classes, "
     "whilst maintaining high accuracy on the remaining classes."
- )
+)
 
 params = read_json(f"{UNLEARNED_FORGET_RETAIN_DIR}/params.json")
 metrics = read_json(f"{UNLEARNED_FORGET_RETAIN_DIR}/metrics.json")
@@ -129,12 +130,3 @@ else:
     raise ValueError("Cannot have neither.")
 
 st.line_chart(df, x="Unlearning Epoch", y="Accuracy", color="Class")
-
-# MIA
-st.header("Membership Inference Attack")
-st.write(
-    "Although we have some evidence that the model is successfully unlearning, it is unclear if the model "
-    "has actually unlearned classes or if it is concealing its knowledge. ML has demonstrated in numerous "
-    "cases that it is capable of exploiting features in the data to learn shortcuts instead of the intended solution."
-    "We will use membership inference attacks to evaluate the extent to which the model unlearned a class."
-)
