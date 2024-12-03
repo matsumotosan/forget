@@ -14,37 +14,7 @@ effects of outliers or outdated samples in the original training data.
 
 ## Running the application
 
-### Locally
-
-To run the application locally, follow
-[installation instructions](#installing-dependencies) to first install the project
-dependencies.
-
-Once the dependencies are installed, execute the following command in the root
-directory of the project to download model weights. The model weights will be
-downloaded into `forget_downloads` under the root directory of the project.
-
-```sh
-gdown --folder https://drive.google.com/drive/folders/1Z2mHXy4C7AiCNd9W6qNsq1Spin5n-zDC
-```
-
-Run the app by executing the command:
-
-```sh
-streamlit run app.py
-```
-
-If this is your first time running a Streamlit application, you may be asked if you would like to register
-your email. You are not required to register your email for the application and may leave it blank.
-
-**Note: If a page on the application seems stuck or is otherwise not working, please try refreshing the page
-or interacting with a component on the page.**
-
-### Docker container
-
-This section is not completed yet.
-
-## Installing dependencies
+### Installing dependencies
 
 The following instructions assumes that a package manager such as `pip` or `uv`
 is installed.
@@ -81,9 +51,49 @@ pip install -r requirements.txt
 uv pip install -r requirements.txt
 ```
 
+### Download model weights
+
+To run the application locally, follow
+[installation instructions](#installing-dependencies) to first install the project
+dependencies.
+
+Once the dependencies are installed, execute the following command in the root
+directory of the project to download model weights. The model weights will be
+downloaded into `app_data` under the root directory of the project.
+
+```sh
+gdown --folder https://drive.google.com/drive/folders/1Z2mHXy4C7AiCNd9W6qNsq1Spin5n-zDC
+```
+
+### Download MUFAC dataset
+
+To run the facial recognition portion of the application, download the MUFAC dataset into the `app_data` directory with the following commands:
+
+```sh
+cd app_dir
+wget https://postechackr-my.sharepoint.com/:u:/g/personal/dongbinna_postech_ac_kr/EbMhBPnmIb5MutZvGicPKggBWKm5hLs0iwKfGW7_TwQIKg?download=1 -O mufac.zip
+unzip mufac.zip -d ./mufac
+```
+
+The MUFAC dataset should be downloaded and extracted into the `app_data/mufac` directory.
+
+### Running the application
+
+Run the app by executing the command:
+
+```sh
+streamlit run app.py
+```
+
+If this is your first time running a Streamlit application, you may be asked if you would like to register
+your email. You are not required to register your email for the application and may leave it blank.
+
+**Note: If a page on the application seems stuck or is otherwise not working, please try refreshing the page
+or interacting with a component on the page.**
+
 ### Updating dependencies
 
-To add or edit the dependencies, edit the `requirements.txt` re-install the dependencies.
+To add or edit the dependencies, edit the `requirements.txt` and re-install the dependencies.
 
 ## Experiments
 
@@ -95,6 +105,9 @@ Results can be reproduced by executing the scripts as follows:
 # Unlearn MNIST
 python unlearn_mnist.py
 
-# Train face classifier
-python train_face.py
+# Unlearn CIFAR-10
+python unlearn_cifar.py
+
+# Unlearn MUFAC
+python unlearn_mufac.py
 ```
