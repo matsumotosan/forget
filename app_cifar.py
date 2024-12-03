@@ -10,7 +10,7 @@ from utils import cifar10_idx2class, cifar10_class2idx, read_json
 
 APP_DIR = "app_data"
 
-TRAINED_MODEL_PATH = f"{APP_DIR}/weights_resnet18_cifar10.pt"
+# TRAINED_MODEL_PATH = f"{APP_DIR}/weights_resnet18_cifar10.pt"
 UNLEARNED_FORGET_RETAIN_DIR = f"{APP_DIR}/2024-11-28-20-30-08"
 UNLEARNED_FORGET_DIR = f"{APP_DIR}/2024-11-28-20-30-08"
 
@@ -54,8 +54,11 @@ st.write(
     "that the model is not confident in its predictions."
 )
 
-trained_model = load_model(TRAINED_MODEL_PATH).eval()
+# trained_model = load_model(TRAINED_MODEL_PATH).eval()
+TRAINED_MODEL_PATH = f"{UNLEARNED_FORGET_RETAIN_DIR}/ckpt/epoch-0.pt"
 UNLEARNED_MODEL_PATH = f"{UNLEARNED_FORGET_RETAIN_DIR}/ckpt/epoch-20.pt"
+
+trained_model = torch.load(TRAINED_MODEL_PATH, map_location=device).eval()
 unlearned_model = torch.load(UNLEARNED_MODEL_PATH, map_location=device).eval()
 
 with st.spinner("Downloading dataset"):
@@ -73,6 +76,7 @@ img = image_select(
 )
 
 x = cifar10_transform(img).unsqueeze(0).to(device)
+
 trained_logits = trained_model(x)
 trained_probs = trained_logits.softmax(dim=1).squeeze().cpu().detach().numpy()
 

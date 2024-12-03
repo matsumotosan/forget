@@ -90,6 +90,7 @@ def main():
 
     unlearn(
         model=model,
+        num_classes=10,
         retain_dataloader=retain_loader,
         forget_dataloader=forget_loader,
         val_dataloader=val_loader,
