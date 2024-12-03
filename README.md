@@ -57,7 +57,7 @@ Once the dependencies are installed, execute the following command in the root
 directory of the project to download model weights.
 
 ```sh
-gdown --fuzzy https://drive.google.com/file/d/1uVw4LP6s4u9whWo5fc7rWOatocuMlxwR/view?usp=sharing
+gdown --fuzzy https://drive.google.com/file/d/1KYoa8KsXjCQSv6Ka1ep9v3q1oQLNe85h/view?usp=sharing
 unzip app_data.zip -d ./app_data
 ```
 
