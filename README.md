@@ -53,26 +53,23 @@ uv pip install -r requirements.txt
 
 ### Download model weights
 
-To run the application locally, follow
-[installation instructions](#installing-dependencies) to first install the project
-dependencies.
-
 Once the dependencies are installed, execute the following command in the root
-directory of the project to download model weights. The model weights will be
-downloaded into `app_data` under the root directory of the project.
+directory of the project to download model weights.
 
 ```sh
-gdown --folder https://drive.google.com/drive/folders/1Z2mHXy4C7AiCNd9W6qNsq1Spin5n-zDC
+gdown --fuzzy https://drive.google.com/file/d/1uVw4LP6s4u9whWo5fc7rWOatocuMlxwR/view?usp=sharing
+unzip app_data.zip -d ./app_data
 ```
+
+If the command does not work, please try manually downloading the file and extracting the file into the directory `app_data/`
 
 ### Download MUFAC dataset
 
 To run the facial recognition portion of the application, download the MUFAC dataset into the `app_data` directory with the following commands:
 
 ```sh
-cd app_dir
 wget https://postechackr-my.sharepoint.com/:u:/g/personal/dongbinna_postech_ac_kr/EbMhBPnmIb5MutZvGicPKggBWKm5hLs0iwKfGW7_TwQIKg?download=1 -O mufac.zip
-unzip mufac.zip -d ./mufac
+unzip mufac.zip -d ./app_data/mufac
 ```
 
 The MUFAC dataset should be downloaded and extracted into the `app_data/mufac` directory.
@@ -110,4 +107,14 @@ python unlearn_cifar.py
 
 # Unlearn MUFAC
 python unlearn_mufac.py
+```
+
+Training and evaluation logs are saved into a logging directory `./logs/<dataset>/<datetime>/`.
+
+### Plotting results
+
+All unlearning experiments are logged into the `log_dir`. The results can be used to plot the training curves by executing the following command:
+
+```sh
+python plot_results.py --exp_dir=<experiment_log_dir> --fig_dir=<figure_dir>
 ```
