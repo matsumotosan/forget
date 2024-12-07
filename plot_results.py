@@ -11,7 +11,7 @@ def main(args):
     os.makedirs(args.fig_dir, exist_ok=True)
     sns.set_theme()
     sns.set_style("ticks")
-    sns.set_context("talk")
+    sns.set_context("paper")
 
     params = read_json(f"{args.exp_dir}/params.json")
     metrics = read_json(f"{args.exp_dir}/metrics.json")

@@ -26,7 +26,7 @@ def main(args):
     os.makedirs(args.fig_dir, exist_ok=True)
     sns.set_theme()
     sns.set_style("ticks")
-    sns.set_context("talk")
+    sns.set_context("paper")
 
     np.random.seed(SEED)
 
@@ -82,12 +82,21 @@ def main(args):
     print(f"MIA accuracy (trained): {mia_score_trained.mean()}")
     print(f"MIA accuracy (unlearned): {mia_score_unlearned.mean()}")
 
+    if params["forget_step"] and not params["retain_step"]:
+        setting = "forget"
+    elif params["retain_step"] and not params["forget_step"]:
+        setting = "retain"
+    elif params["retain_step"] and params["forget_step"]:
+        setting = "forget+retain"
+    else:
+        raise ValueError("Cannot have neither.")
+
     plot_loss_hist(
         forget_loss_trained,
         retain_loss_trained,
         test_loss_trained,
         title=f"Trained Model Sample Losses\n(MIA accuracy: {mia_score_trained.mean():.4f})",
-        filename=f"{args.fig_dir}/mia_{params['dataset']}_trained.png",
+        filename=f"{args.fig_dir}/mia_{params['dataset']}_trained_{setting}_{os.path.basename(os.path.normpath(args.exp_dir))}.png",
         bins=20,
     )
 
@@ -96,7 +105,7 @@ def main(args):
         retain_loss_unlearned,
         test_loss_unlearned,
         title=f"Unlearned Model Sample Losses\n(MIA accuracy: {mia_score_unlearned.mean():.4f})",
-        filename=f"{args.fig_dir}/mia_{params['dataset']}_unlearned.png",
+        filename=f"{args.fig_dir}/mia_{params['dataset']}_unlearned_{setting}_{os.path.basename(os.path.normpath(args.exp_dir))}.png",
         bins=N_BINS,
     )
 
